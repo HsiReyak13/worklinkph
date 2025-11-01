@@ -6,13 +6,16 @@
 }
 
 .resources-header {
-  background-color: #2563eb;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: white;
-  padding: 15px 20px;
+  padding: 18px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .resources-header h1 {
@@ -62,16 +65,18 @@
 
 .search-input {
   width: 100%;
-  padding: 12px 40px 12px 16px;
+  padding: 14px 40px 14px 16px;
   border: 2px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 1rem;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
+  background-color: #ffffff;
 }
 
 .search-input:focus {
   outline: none;
   border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 .search-icon {
@@ -135,16 +140,18 @@
 }
 
 .resource-card {
-  background-color: white;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
-  transition: box-shadow 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .resource-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.12);
+  border-color: #bfdbfe;
 }
 
 .resource-header {
@@ -237,19 +244,22 @@
   background-color: #10b981;
   color: white;
   border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
+  padding: 12px 20px;
+  border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 5px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
 }
 
 .visit-button:hover {
   background-color: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .no-resources {
