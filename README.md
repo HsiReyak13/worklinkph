@@ -136,14 +136,11 @@ Distributed under the ISC License.
 
 ## Contact
 
-Project Link: `https://github.com/karl1227/worklinkph`
+Project Link: `https://github.com/HsiReyak13/worklinkph`
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Acknowledgments
-
-- Best‑README‑Template by Othneil Drew ([link](https://github.com/othneildrew/Best-README-Template/blob/main/README.md))
-- Shields.io for badges
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
