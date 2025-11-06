@@ -1,244 +1,159 @@
-# WorkLink PH - Mobile Application
+# WorkLink PH
+
+> Bridging Opportunities for Inclusive Employment in the Philippines
+
+[![React](https://img.shields.io/badge/React-19.2.0-61DAFB?logo=react)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=node.js)](https://nodejs.org/)
 
 ## Overview
-WorkLink PH is a ReactJS mobile application designed to bridge opportunities for inclusive employment. The app serves Persons with Disabilities (PWDs), Senior Citizens, Youth, and marginalized communities by providing accessible job matching, training resources, and employment support.
+
+WorkLink PH is a full-stack web application designed to bridge employment opportunities for inclusive communities in the Philippines. The platform serves Persons with Disabilities (PWDs), Senior Citizens, Youth, and marginalized communities by providing accessible job matching, comprehensive resource directories, and employment support services.
 
 ## Features
 
-### 🎯 Core Functionality
-- **Inclusive Job Matching**: Find employment opportunities tailored to specific needs and abilities
+- **User Authentication**: Secure login and registration system
+- **Job Search & Matching**: Find employment opportunities tailored to specific needs
 - **Resource Directory**: Access comprehensive services and support organizations
-- **Personalized Experience**: Customize profiles for targeted recommendations
-- **Accessibility Features**: Built-in support for screen readers, high contrast mode, and larger text
+- **User Profiles**: Customize profiles for targeted recommendations
+- **Onboarding System**: Guided setup for new users
+- **Accessibility Features**: WCAG compliant with screen reader support, high contrast mode, and scalable fonts
 
-### 📱 Screens
-1. **Splash Screen**: Welcome screen with WorkLink PH branding
-2. **Login Screen**: User authentication with email/phone and password
-3. **Sign Up Screen**: Two-step account creation process with progress indicators
-4. **Home Dashboard**: Main hub with hero section, features, and call-to-action
-5. **Find Jobs**: Job search with filters, search functionality, and job listings
-6. **Profile**: Personal information, preferences, and accessibility settings
-7. **Resources**: Directory of employment resources, training, and legal information
+## Technology Stack
 
-### 🎨 Design Features
-- **Mobile-First Design**: Optimized for mobile devices
-- **Accessibility**: WCAG compliant with screen reader support
-- **Responsive Layout**: Adapts to different screen sizes
-- **Modern UI**: Clean, professional interface with intuitive navigation
+### Frontend
+- React 19.2.0
+- React Router DOM 6.8.0
+- React Icons 5.5.0
+- CSS3
 
-## Target Beneficiaries
+### Backend
+- Node.js with Express
+- SQLite Database
+- JWT Authentication
+- RESTful API
 
-### 👥 Who We Serve
-- **Persons with Disabilities (PWDs)**: Accessible job listings with inclusive employers
-- **Senior Citizens**: Flexible work opportunities suited to experience and lifestyle
-- **Youth**: Entry-level positions, internships, and career-building programs
-- **Marginalized Groups**: Sustainable opportunities for underserved communities
+## Prerequisites
 
-## Technical Stack
+- Node.js (v14.0 or higher)
+- npm (v6.0 or higher)
+- Git
 
-### 🛠️ Technologies Used
-- **React 19.2.0**: Modern React with hooks and functional components
-- **React Router DOM 6.8.0**: Client-side routing for navigation
-- **CSS3**: Custom styling with mobile-first responsive design
-- **JavaScript ES6+**: Modern JavaScript features
+## Installation
 
-### 📦 Dependencies
-```json
-{
-  "react": "^19.2.0",
-  "react-dom": "^19.2.0", 
-  "react-router-dom": "^6.8.0",
-  "react-scripts": "5.0.1",
-  "web-vitals": "^2.1.4"
-}
-```
+### 1. Clone the Repository
 
-#### Development Dependencies
-- **@testing-library/react**: Testing utilities for React components
-- **@testing-library/jest-dom**: Custom Jest matchers for DOM elements
-- **@testing-library/user-event**: User interaction simulation for tests
-
-### 📁 Project Structure
-```
-src/
-├── screens/
-│   ├── SplashScreen.js & .css
-│   ├── LoginScreen.js & .css
-│   ├── SignUpScreen.js & .css
-│   ├── HomeDashboard.js & .css
-│   ├── FindJobs.js & .css
-│   ├── Profile.js & .css
-│   └── Resources.js & .css
-├── App.js
-├── App.css
-└── index.css
-```
-
-## Getting Started
-
-### 📋 Prerequisites
-Before running this project, make sure you have the following installed on your computer:
-
-- **Node.js** (version 14.0 or higher) - [Download here](https://nodejs.org/)
-- **npm** (comes with Node.js) or **yarn** package manager
-- **Git** (for version control) - [Download here](https://git-scm.com/)
-
-### 🚀 Installation & Setup
-
-#### Option 1: Clone from GitHub
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/worklinkph.git
-   cd worklinkph
-   ```
-
-#### Option 2: Download and Extract
-1. Download the project files
-2. Extract to your desired location
-3. Navigate to the project directory:
-   ```bash
-   cd worklinkph
-   ```
-
-#### Install Dependencies
 ```bash
-npm install
+git clone https://github.com/karl1227/worklinkph.git
+cd worklinkph
 ```
 
-#### Start Development Server
+### 2. Install Dependencies
+
 ```bash
-npm start
+# Install all dependencies
+npm run setup
 ```
 
-The application will open automatically in your browser at [http://localhost:3000](http://localhost:3000)
+This will install both frontend and backend dependencies and set up the database.
 
-### 🏗️ Building for Production
+### 3. Configure Environment
+
+Create a `.env` file in the `server` directory:
+
+```env
+PORT=5000
+NODE_ENV=development
+JWT_SECRET=your_secret_key_here
+JWT_EXPIRE=7d
+DB_PATH=./database/worklinkph.db
+FRONTEND_URL=http://localhost:3000
+```
+
+### 4. Seed Sample Data (Optional)
+
+```bash
+cd server
+npm run seed
+```
+
+## Usage
+
+### Development Mode
+
+Start both frontend and backend:
+
+```bash
+npm run dev
+```
+
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:5000`
+
+### Production Build
+
 ```bash
 npm run build
 ```
-This creates a `build` folder with optimized production files.
 
-### 🧪 Running Tests
-```bash
-npm test
+## Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm start` | Start both frontend and backend |
+| `npm run dev` | Start in development mode with hot-reload |
+| `npm run build` | Build frontend for production |
+| `npm test` | Run tests |
+| `npm run setup` | Install dependencies and setup database |
+
+## Project Structure
+
+```
+worklinkph/
+├── src/          # Frontend React application
+├── server/       # Backend Express API
+├── public/       # Static assets
+└── build/        # Production build output
 ```
 
-### 📦 Available Scripts
-- `npm start` - Runs the app in development mode
-- `npm test` - Launches the test runner
-- `npm run build` - Builds the app for production
-- `npm run eject` - Ejects from Create React App (one-way operation)
+## Development
 
-### 🔧 Troubleshooting
+### Guidelines
 
-#### Common Issues:
-1. **Port 3000 already in use**: The app will automatically suggest using a different port
-2. **Node modules issues**: Delete `node_modules` folder and run `npm install` again
-3. **Permission errors**: Run terminal as administrator (Windows) or use `sudo` (Mac/Linux)
-
-#### System Requirements:
-- **Windows**: Windows 10 or later
-- **macOS**: macOS 10.14 or later  
-- **Linux**: Ubuntu 18.04+ or equivalent
-- **RAM**: Minimum 4GB recommended
-- **Storage**: At least 1GB free space
-
-## Key Features Implementation
-
-### 🔐 Authentication Flow
-- Splash screen with auto-navigation to login
-- Two-step signup process with progress tracking
-- Form validation and user feedback
-
-### 🎯 Job Search & Matching
-- Real-time search functionality
-- Filter by job type, location, and target groups
-- Interactive job cards with detailed information
-- Tag-based filtering system
-
-### 👤 Profile Management
-- Comprehensive personal information forms
-- Job preference settings
-- Accessibility customization options
-- Notification preferences
-
-### 📚 Resource Directory
-- Categorized resource listings
-- Search and filter functionality
-- External link integration
-- Organization and contact information
-
-## Accessibility Features
-
-### ♿ Inclusive Design
-- **Screen Reader Support**: Proper ARIA labels and semantic HTML
-- **High Contrast Mode**: Enhanced visibility options
-- **Large Text Support**: Scalable font sizes
-- **Keyboard Navigation**: Full keyboard accessibility
-- **Focus Management**: Clear focus indicators
-
-### 🎨 Visual Design
-- **Color Contrast**: WCAG AA compliant color schemes
-- **Typography**: Readable fonts with appropriate sizing
-- **Spacing**: Adequate touch targets for mobile devices
-- **Icons**: Meaningful icons with text alternatives
-
-## Deployment
-
-### 🌐 Deploy to GitHub Pages
-1. Install gh-pages package:
-   ```bash
-   npm install --save-dev gh-pages
-   ```
-
-2. Add homepage to package.json:
-   ```json
-   "homepage": "https://yourusername.github.io/worklinkph"
-   ```
-
-3. Add deploy scripts to package.json:
-   ```json
-   "scripts": {
-     "predeploy": "npm run build",
-     "deploy": "gh-pages -d build"
-   }
-   ```
-
-4. Deploy:
-   ```bash
-   npm run deploy
-   ```
-
-### 🚀 Deploy to Netlify
-1. Build the project: `npm run build`
-2. Drag and drop the `build` folder to [Netlify](https://netlify.com)
-3. Or connect your GitHub repository for automatic deployments
-
-### ☁️ Deploy to Vercel
-1. Install Vercel CLI: `npm i -g vercel`
-2. Run: `vercel` in your project directory
-3. Follow the prompts
-
-## Future Enhancements
-
-### 🔮 Planned Features
-- **Backend Integration**: Real API connections for job data
-- **Push Notifications**: Real-time job alerts
-- **Offline Support**: PWA capabilities
-- **Multi-language Support**: Filipino and English
-- **Advanced Matching**: AI-powered job recommendations
-- **Training Modules**: Integrated learning platform
-
-## Contributing
-
-### 🤝 Development Guidelines
 - Follow React best practices
-- Maintain accessibility standards
-- Use semantic HTML
+- Maintain accessibility standards (WCAG 2.1 AA)
+- Use semantic HTML elements
 - Write clean, documented code
 - Test on multiple devices
 
+## Deployment
+
+### Frontend
+
+The frontend can be deployed to:
+- GitHub Pages
+- Netlify
+- Vercel
+- Any static hosting service
+
+### Backend
+
+The backend requires:
+- Node.js runtime environment
+- Database (SQLite for development, PostgreSQL/MySQL for production)
+- Environment variables configuration
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
+
 ## License
+
 This project is developed for educational and social impact purposes, focusing on inclusive employment opportunities in the Philippines.
 
 ---
