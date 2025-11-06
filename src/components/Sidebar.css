@@ -1,4 +1,4 @@
-/* Left Drawer Navigation */
+/* Top Overlay Navigation Bar */
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -8,38 +8,29 @@
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 1000;
   display: flex;
-  justify-content: flex-start;
-  align-items: stretch;
-  animation: fadeIn 0.3s ease-out;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 0;
 }
 
 .sidebar {
-  width: 280px;
-  max-width: 85vw;
+  width: 100%;
   background-color: #2563eb;
   padding: 0;
-  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
-  overflow-y: auto;
-  overflow-x: hidden;
-  animation: slideIn 0.3s ease-out;
-  height: 100vh;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: slideDown 0.3s ease-out;
+  border-radius: 0;
 }
 
-@keyframes fadeIn {
+@keyframes slideDown {
   from {
+    transform: translateY(-100%);
     opacity: 0;
   }
   to {
+    transform: translateY(0);
     opacity: 1;
-  }
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
   }
 }
 
@@ -63,16 +54,17 @@
 .sidebar-close {
   background: none;
   border: none;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: white;
   transition: all 0.2s ease;
-  margin-left: auto;
-  border-radius: 6px;
+  position: absolute;
+  top: 15px;
+  right: 20px;
 }
 
 .sidebar-close:hover {
@@ -106,7 +98,7 @@
 
 .sidebar-item.active {
   background-color: rgba(255, 255, 255, 0.2);
-  border-left: 3px solid white;
+  border-right: 3px solid white;
 }
 
 .sidebar-icon {

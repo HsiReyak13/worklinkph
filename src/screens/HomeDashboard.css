@@ -6,16 +6,13 @@
 }
 
 .dashboard-header {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background-color: #2563eb;
   color: white;
-  padding: 18px 20px;
+  padding: 15px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-header h1 {
@@ -81,15 +78,14 @@
 }
 
 .hero-button {
-  padding: 14px 28px;
+  padding: 12px 24px;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   min-width: 140px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .hero-button.primary {
@@ -99,22 +95,17 @@
 
 .hero-button.primary:hover {
   background-color: #f3f4f6;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .hero-button.secondary {
   background-color: transparent;
   color: white;
   border: 2px solid white;
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
 }
 
 .hero-button.secondary:hover {
   background-color: white;
   color: #2563eb;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
 }
 
 .features-section {
@@ -139,18 +130,10 @@
 
 .feature-card {
   text-align: center;
-  padding: 24px 20px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  padding: 20px;
+  border-radius: 10px;
+  background-color: #f9fafb;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.1);
-  border-color: #bfdbfe;
 }
 
 .feature-icon {
@@ -191,18 +174,10 @@
 }
 
 .beneficiary-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  padding: 24px 20px;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s ease;
-}
-
-.beneficiary-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.12);
-  border-color: #bfdbfe;
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .beneficiary-card h4 {
@@ -275,22 +250,15 @@
   margin: 15px 0;
 }
 
-.footer-link-btn {
-  background: none;
-  border: none;
+.footer-links span {
+  font-size: 1.2rem;
   cursor: pointer;
-  color: white;
   opacity: 0.7;
-  transition: all 0.3s ease;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: opacity 0.3s ease;
 }
 
-.footer-link-btn:hover {
+.footer-links span:hover {
   opacity: 1;
-  transform: translateY(-2px);
 }
 
 .footer-love {

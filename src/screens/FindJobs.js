@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { FiMenu, FiSearch, FiFilter } from 'react-icons/fi';
 import './FindJobs.css';
 import Sidebar from '../components/Sidebar';
 
@@ -7,7 +6,12 @@ const FindJobs = ({ onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [filterOptions, setFilterOptions] = useState({
+    jobType: [],
+    location: [],
+    tags: []
+  });
 
   const jobs = [
     {
@@ -64,17 +68,53 @@ const FindJobs = ({ onNavigate }) => {
     );
   };
 
-  const availableFilters = ['Full-time', 'Part-time', 'Work from Home', 'PWDs', 'Senior Citizens', 'Youth', 'Indigenous Peoples', 'Rural Communities'];
+  const handleFilterOptionToggle = (filterCategory, option) => {
+    setFilterOptions(prev => ({
+      ...prev,
+      [filterCategory]: prev[filterCategory].includes(option)
+        ? prev[filterCategory].filter(f => f !== option)
+        : [...prev[filterCategory], option]
+    }));
+  };
+
+  const toggleFilterPanel = () => {
+    setFilterPanelOpen(!filterPanelOpen);
+  };
+
+  const clearAllFilters = () => {
+    setFilterOptions({
+      jobType: [],
+      location: [],
+      tags: []
+    });
+    setSelectedFilters([]);
+    setSearchTerm('');
+  };
+
+  // Get unique values for filter options
+  const allJobTypes = [...new Set(jobs.map(job => job.tags.find(tag => ['Full-time', 'Part-time', 'Work from Home'].includes(tag))).filter(Boolean))];
+  const allLocations = [...new Set(jobs.map(job => job.location))];
+  const allTags = [...new Set(jobs.flatMap(job => job.tags))];
 
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          job.location.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesFilters = selectedFilters.length === 0 || 
-                          selectedFilters.some(filter => job.tags.includes(filter));
+    const matchesTagFilters = selectedFilters.length === 0 || 
+                              selectedFilters.some(filter => job.tags.includes(filter));
     
-    return matchesSearch && matchesFilters;
+    const matchesJobTypeFilter = filterOptions.jobType.length === 0 ||
+                                 filterOptions.jobType.some(type => job.tags.includes(type));
+    
+    const matchesLocationFilter = filterOptions.location.length === 0 ||
+                                  filterOptions.location.includes(job.location);
+    
+    const matchesTagFilter = filterOptions.tags.length === 0 ||
+                             filterOptions.tags.some(tag => job.tags.includes(tag));
+    
+    return matchesSearch && matchesTagFilters && matchesJobTypeFilter && 
+           matchesLocationFilter && matchesTagFilter;
   });
 
   const handleViewDetails = (jobId) => {
@@ -95,14 +135,14 @@ const FindJobs = ({ onNavigate }) => {
       {/* Header */}
       <header className="jobs-header">
         <h1 className="header-title" onClick={() => onNavigate('home')}>WorkLink PH</h1>
-        <button className="menu-button" onClick={toggleSidebar} aria-label="Open menu">
-          <FiMenu size={24} />
+        <button className="menu-button" onClick={toggleSidebar}>
+          ☰
         </button>
       </header>
 
       {/* Title */}
       <div className="jobs-title-section">
-        <h2>Find Inclusive Job Opportunities</h2>
+        <h2>Find Inclusive Job Opportunities 👤</h2>
       </div>
 
       {/* Search Bar */}
@@ -115,18 +155,85 @@ const FindJobs = ({ onNavigate }) => {
             onChange={handleSearch}
             className="search-input"
           />
-          <FiSearch className="search-icon" />
+          <span className="search-icon">🔍</span>
         </div>
-        <button className="filter-button" onClick={() => setFilterModalOpen(true)}>
-          <FiFilter size={16} style={{ marginRight: '6px' }} />
-          Filter Jobs
+        <button 
+          className={`filter-button ${filterPanelOpen ? 'active' : ''}`}
+          onClick={toggleFilterPanel}
+        >
+          {filterPanelOpen ? '🔺' : '🔽'} Filter Jobs
         </button>
       </div>
+
+      {/* Filter Panel */}
+      {filterPanelOpen && (
+        <div className="filter-panel">
+          <div className="filter-panel-header">
+            <h3>Filter Jobs</h3>
+            <button className="clear-filters-button" onClick={clearAllFilters}>
+              Clear All
+            </button>
+          </div>
+          
+          <div className="filter-groups">
+            {/* Job Type Filter */}
+            <div className="filter-group">
+              <h4>Job Type</h4>
+              <div className="filter-options">
+                {allJobTypes.map(type => (
+                  <label key={type} className="filter-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={filterOptions.jobType.includes(type)}
+                      onChange={() => handleFilterOptionToggle('jobType', type)}
+                    />
+                    <span>{type}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Location Filter */}
+            <div className="filter-group">
+              <h4>Location</h4>
+              <div className="filter-options">
+                {allLocations.map(location => (
+                  <label key={location} className="filter-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={filterOptions.location.includes(location)}
+                      onChange={() => handleFilterOptionToggle('location', location)}
+                    />
+                    <span>{location}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Tags Filter */}
+            <div className="filter-group">
+              <h4>Tags</h4>
+              <div className="filter-options">
+                {allTags.map(tag => (
+                  <label key={tag} className="filter-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={filterOptions.tags.includes(tag)}
+                      onChange={() => handleFilterOptionToggle('tags', tag)}
+                    />
+                    <span>{tag}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Job Count and Location */}
       <div className="jobs-info">
         <span className="job-count">{filteredJobs.length} jobs found</span>
-        <span className="location">Philippines</span>
+        <span className="location">📍 Philippines</span>
       </div>
 
       {/* Job Listings */}
@@ -160,7 +267,7 @@ const FindJobs = ({ onNavigate }) => {
               className="view-details-button"
               onClick={() => handleViewDetails(job.id)}
             >
-              View Details
+              View Details 🔗
             </button>
           </div>
         ))}
@@ -168,13 +275,11 @@ const FindJobs = ({ onNavigate }) => {
 
       {filteredJobs.length === 0 && (
         <div className="no-jobs">
-          <div className="empty-icon">🔍</div>
-          <h3>No jobs found</h3>
-          <p>We couldn't find any jobs matching your criteria. Try adjusting your filters or search terms.</p>
-          <button className="empty-action-button" onClick={() => {setSearchTerm(''); setSelectedFilters([]);}}>
-            Clear All Filters
-          </button>
-        </div>
+          <p>No jobs found matching your criteria.</p>
+          <button onClick={() => {setSearchTerm(''); setSelectedFilters([]);}}>
+          Clear Filters
+        </button>
+      </div>
       )}
 
       {/* Sidebar */}
@@ -184,58 +289,6 @@ const FindJobs = ({ onNavigate }) => {
         onNavigate={onNavigate}
         currentScreen="findjobs"
       />
-
-      {/* Filter Modal */}
-      {filterModalOpen && (
-        <div className="filter-modal-overlay" onClick={() => setFilterModalOpen(false)}>
-          <div className="filter-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="filter-modal-header">
-              <h3>Filter Jobs</h3>
-              <button className="filter-modal-close" onClick={() => setFilterModalOpen(false)}>
-                ×
-              </button>
-            </div>
-            <div className="filter-modal-content">
-              <div className="filter-section">
-                <h4>Job Type</h4>
-                <div className="filter-tags">
-                  {availableFilters.filter(f => ['Full-time', 'Part-time', 'Work from Home'].includes(f)).map(filter => (
-                    <button
-                      key={filter}
-                      className={`filter-tag ${selectedFilters.includes(filter) ? 'selected' : ''}`}
-                      onClick={() => handleFilterToggle(filter)}
-                    >
-                      {filter}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="filter-section">
-                <h4>Target Group</h4>
-                <div className="filter-tags">
-                  {availableFilters.filter(f => !['Full-time', 'Part-time', 'Work from Home'].includes(f)).map(filter => (
-                    <button
-                      key={filter}
-                      className={`filter-tag ${selectedFilters.includes(filter) ? 'selected' : ''}`}
-                      onClick={() => handleFilterToggle(filter)}
-                    >
-                      {filter}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="filter-modal-actions">
-              <button className="filter-clear-btn" onClick={() => setSelectedFilters([])}>
-                Clear All
-              </button>
-              <button className="filter-apply-btn" onClick={() => setFilterModalOpen(false)}>
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

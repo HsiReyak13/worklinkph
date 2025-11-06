@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { FiMenu, FiPhone, FiMail } from 'react-icons/fi';
-import { MdShare } from 'react-icons/md';
 import './HomeDashboard.css';
 import Sidebar from '../components/Sidebar';
 
@@ -32,8 +30,8 @@ const HomeDashboard = ({ onNavigate }) => {
       {/* Header */}
       <header className="dashboard-header">
         <h1 className="header-title" onClick={() => onNavigate('home')}>WorkLink PH</h1>
-        <button className="menu-button" onClick={toggleSidebar} aria-label="Open menu">
-          <FiMenu size={24} />
+        <button className="menu-button" onClick={toggleSidebar}>
+          ☰
         </button>
       </header>
 
@@ -47,10 +45,10 @@ const HomeDashboard = ({ onNavigate }) => {
           </p>
           <div className="hero-buttons">
             <button className="hero-button primary" onClick={handleFindJobs}>
-              Find Jobs
+              🔍 Find Jobs
             </button>
             <button className="hero-button secondary" onClick={handleResources}>
-              Resources
+              📚 Resources
             </button>
           </div>
         </div>
@@ -61,32 +59,17 @@ const HomeDashboard = ({ onNavigate }) => {
         <h3>How WorkLink PH Helps You</h3>
         <div className="features-grid">
           <div className="feature-card">
-            <div className="feature-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-              </svg>
-            </div>
+            <div className="feature-icon">💼</div>
             <h4>Inclusive Job Matching</h4>
             <p>Find employment opportunities tailored to your specific needs and abilities.</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              </svg>
-            </div>
+            <div className="feature-icon">📖</div>
             <h4>Resource Directory</h4>
             <p>Access a comprehensive list of services and support organizations.</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            </div>
+            <div className="feature-icon">👤</div>
             <h4>Personalized Experience</h4>
             <p>Customize your profile to receive recommendations that match your preferences.</p>
           </div>
@@ -131,17 +114,11 @@ const HomeDashboard = ({ onNavigate }) => {
           <h4>WorkLink PH</h4>
           <p>Inclusive Employment & Empowerment</p>
           <div className="footer-links">
-            <button className="footer-link-btn" aria-label="Call us">
-              <FiPhone size={20} />
-            </button>
-            <button className="footer-link-btn" aria-label="Email us">
-              <FiMail size={20} />
-            </button>
-            <button className="footer-link-btn" aria-label="Share app">
-              <MdShare size={20} />
-            </button>
+            <span>📞</span>
+            <span>✉️</span>
+            <span>📤</span>
           </div>
-          <p className="footer-love">Made with <span aria-label="love">❤️</span> for inclusivity</p>
+          <p className="footer-love">Made with ❤️ for inclusivity</p>
         </div>
       </footer>
 

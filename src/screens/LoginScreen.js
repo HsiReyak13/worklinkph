@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { FiMail } from 'react-icons/fi';
 import './LoginScreen.css';
 
 const LoginScreen = ({ onNavigate, onLogin }) => {
@@ -8,11 +7,6 @@ const LoginScreen = ({ onNavigate, onLogin }) => {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotPasswordStatus, setForgotPasswordStatus] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isForgotLoading, setIsForgotLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -26,41 +20,16 @@ const LoginScreen = ({ onNavigate, onLogin }) => {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    setIsLoading(true);
     console.log('Login attempt:', formData);
-    // Simulate API call
-    setTimeout(() => {
-      if (onLogin) {
-        onLogin();
-      }
-      setIsLoading(false);
-    }, 1000);
+    // For demo purposes, always succeed
+    if (onLogin) {
+      onLogin();
+    }
   };
 
   const handleForgotPassword = () => {
-    setShowForgotModal(true);
-  };
-
-  const handleForgotPasswordSubmit = (e) => {
-    e.preventDefault();
-    setIsForgotLoading(true);
-    console.log('Forgot password request for:', forgotEmail);
-    // Simulate API call
-    setTimeout(() => {
-      setIsForgotLoading(false);
-      setForgotPasswordStatus('success');
-      setTimeout(() => {
-        setShowForgotModal(false);
-        setForgotPasswordStatus(null);
-        setForgotEmail('');
-      }, 2000);
-    }, 1000);
-  };
-
-  const handleCloseForgotModal = () => {
-    setShowForgotModal(false);
-    setForgotPasswordStatus(null);
-    setForgotEmail('');
+    console.log('Forgot password clicked');
+    // In a real app, this would navigate to forgot password screen
   };
 
   return (
@@ -137,15 +106,8 @@ const LoginScreen = ({ onNavigate, onLogin }) => {
             Forgot password?
           </button>
 
-          <button type="submit" className="login-button" disabled={isLoading}>
-            {isLoading ? (
-              <span className="button-with-spinner">
-                <span className="spinner-small"></span>
-                Logging in...
-              </span>
-            ) : (
-              'Log In'
-            )}
+          <button type="submit" className="login-button">
+            Log In
           </button>
         </form>
 
@@ -162,60 +124,6 @@ const LoginScreen = ({ onNavigate, onLogin }) => {
           </p>
         </div>
       </div>
-
-      {/* Forgot Password Modal */}
-      {showForgotModal && (
-        <div className="modal-overlay" onClick={handleCloseForgotModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            {!forgotPasswordStatus && (
-              <>
-                <div className="modal-header">
-                  <h2>Reset Password</h2>
-                  <button className="modal-close" onClick={handleCloseForgotModal}>
-                    ×
-                  </button>
-                </div>
-                <div className="modal-body">
-                  <p>Enter your email address and we'll send you a link to reset your password.</p>
-                  <form onSubmit={handleForgotPasswordSubmit}>
-                    <div className="form-group">
-                      <label htmlFor="forgotEmail">Email Address</label>
-                      <div className="input-with-icon">
-                        <FiMail className="input-icon" />
-                        <input
-                          type="email"
-                          id="forgotEmail"
-                          value={forgotEmail}
-                          onChange={(e) => setForgotEmail(e.target.value)}
-                          placeholder="Enter your email"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <button type="submit" className="modal-submit-btn" disabled={isForgotLoading}>
-                      {isForgotLoading ? (
-                        <span className="button-with-spinner">
-                          <span className="spinner-small"></span>
-                          Sending...
-                        </span>
-                      ) : (
-                        'Send Reset Link'
-                      )}
-                    </button>
-                  </form>
-                </div>
-              </>
-            )}
-            {forgotPasswordStatus === 'success' && (
-              <div className="modal-success">
-                <div className="success-icon">✓</div>
-                <h2>Email Sent!</h2>
-                <p>We've sent a password reset link to your email. Please check your inbox.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
