@@ -1,163 +1,149 @@
-# WorkLink PH
+<!-- Inspired by Best-README-Template: https://github.com/othneildrew/Best-README-Template/blob/main/README.md -->
 
-> Bridging Opportunities for Inclusive Employment in the Philippines
+<a id="readme-top"></a>
 
+<!-- PROJECT SHIELDS -->
 [![React](https://img.shields.io/badge/React-19.2.0-61DAFB?logo=react)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=node.js)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/License-ISC-blue.svg)](#license)
 
-## Overview
+<!-- PROJECT TITLE/LOGO -->
+<div align="center">
+  <h1>WorkLink PH</h1>
+  <p>Bridging Opportunities for Inclusive Employment in the Philippines</p>
+</div>
 
-WorkLink PH is a full-stack web application designed to bridge employment opportunities for inclusive communities in the Philippines. The platform serves Persons with Disabilities (PWDs), Senior Citizens, Youth, and marginalized communities by providing accessible job matching, comprehensive resource directories, and employment support services.
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li><a href="#about-the-project">About the Project</a></li>
+    <li><a href="#built-with">Built With</a></li>
+    <li><a href="#getting-started">Getting Started</a></li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+  </details>
 
-## Features
+## About the Project
 
-- **User Authentication**: Secure login and registration system
-- **Job Search & Matching**: Find employment opportunities tailored to specific needs
-- **Resource Directory**: Access comprehensive services and support organizations
-- **User Profiles**: Customize profiles for targeted recommendations
-- **Onboarding System**: Guided setup for new users
-- **Accessibility Features**: WCAG compliant with screen reader support, high contrast mode, and scalable fonts
+WorkLink PH is a full‑stack web application that connects inclusive employers with job seekers from diverse communities (PWDs, Senior Citizens, Youth, and other marginalized groups). The platform offers accessible job matching, a resources directory, and a simple onboarding experience.
 
-## Technology Stack
+Key highlights:
+- Inclusive, mobile‑first UI with accessibility considerations
+- Basic authentication and user profiles
+- Job listings with filters and tags
+- Resources directory for training and support
 
-### Frontend
-- React 19.2.0
-- React Router DOM 6.8.0
-- React Icons 5.5.0
-- CSS3
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### Backend
-- Node.js with Express
-- SQLite Database
-- JWT Authentication
-- RESTful API
+## Built With
 
-## Prerequisites
+- React
+- Express (Node.js)
+- SQLite (development default)
+- CSS
 
-- Node.js (v14.0 or higher)
-- npm (v6.0 or higher)
-- Git
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Installation
+## Getting Started
 
-### 1. Clone the Repository
+Follow these steps to run the project locally.
 
-```bash
-git clone https://github.com/karl1227/worklinkph.git
-cd worklinkph
-```
+### Prerequisites
 
-### 2. Install Dependencies
+- Node.js (v14+)
+- npm
 
-```bash
-# Install all dependencies
-npm run setup
-```
+### Installation
 
-This will install both frontend and backend dependencies and set up the database.
+1. Clone the repository
+   ```bash
+   git clone https://github.com/karl1227/worklinkph.git
+   cd worklinkph
+   ```
+2. Install dependencies
+   ```bash
+   # Root (frontend)
+   npm install
 
-### 3. Configure Environment
+   # Backend
+   cd server && npm install && cd ..
+   ```
+3. Configure environment (server/.env)
+   ```env
+   PORT=5000
+   NODE_ENV=development
+   JWT_SECRET=your_secret_key_here
+   JWT_EXPIRE=7d
+   DB_PATH=./database/worklinkph.db
+   FRONTEND_URL=http://localhost:3000
+   ```
+4. (Optional) Seed sample data
+   ```bash
+   cd server && npm run seed
+   ```
 
-Create a `.env` file in the `server` directory:
-
-```env
-PORT=5000
-NODE_ENV=development
-JWT_SECRET=your_secret_key_here
-JWT_EXPIRE=7d
-DB_PATH=./database/worklinkph.db
-FRONTEND_URL=http://localhost:3000
-```
-
-### 4. Seed Sample Data (Optional)
-
-```bash
-cd server
-npm run seed
-```
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Usage
 
-### Development Mode
-
-Start both frontend and backend:
+Start both frontend and backend in development mode:
 
 ```bash
 npm run dev
 ```
 
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:5000`
+- Frontend: http://localhost:3000
+- Backend: http://localhost:5000
 
-### Production Build
+Build production assets:
 
 ```bash
 npm run build
 ```
 
-## Available Scripts
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-| Script | Description |
-|--------|-------------|
-| `npm start` | Start both frontend and backend |
-| `npm run dev` | Start in development mode with hot-reload |
-| `npm run build` | Build frontend for production |
-| `npm test` | Run tests |
-| `npm run setup` | Install dependencies and setup database |
+## Roadmap
 
-## Project Structure
+- [ ] Refine onboarding and accessibility settings
+- [ ] Expand job filters and saved searches
+- [ ] Add deployment guides for preferred platforms
 
-```
-worklinkph/
-├── src/          # Frontend React application
-├── server/       # Backend Express API
-├── public/       # Static assets
-└── build/        # Production build output
-```
-
-## Development
-
-### Guidelines
-
-- Follow React best practices
-- Maintain accessibility standards (WCAG 2.1 AA)
-- Use semantic HTML elements
-- Write clean, documented code
-- Test on multiple devices
-
-## Deployment
-
-### Frontend
-
-The frontend can be deployed to:
-- GitHub Pages
-- Netlify
-- Vercel
-- Any static hosting service
-
-### Backend
-
-The backend requires:
-- Node.js runtime environment
-- Database (SQLite for development, PostgreSQL/MySQL for production)
-- Environment variables configuration
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
+Contributions are welcome!
 
 1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## License
 
-This project is developed for educational and social impact purposes, focusing on inclusive employment opportunities in the Philippines.
+Distributed under the ISC License.
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-**Made with ❤️ for inclusivity**
+## Contact
 
-*WorkLink PH - Bridging Opportunities for Inclusive Employment*
+Project Link: `https://github.com/karl1227/worklinkph`
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Acknowledgments
+
+- Best‑README‑Template by Othneil Drew ([link](https://github.com/othneildrew/Best-README-Template/blob/main/README.md))
+- Shields.io for badges
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
