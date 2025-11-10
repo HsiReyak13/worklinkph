@@ -1,9 +1,6 @@
-const jwt = require('jsonwebtoken');
+const { supabase } = require('../config/database');
 const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_this_in_production';
-
-// Middleware to verify JWT token
 const authenticate = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -15,27 +12,30 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.userId);
+    const { data: { user: authUser }, error } = await supabase.auth.getUser(token);
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not found. Please login again.'
-      });
-    }
-
-    req.user = user;
-    req.userId = decoded.userId;
-    next();
-  } catch (error) {
-    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+    if (error || !authUser) {
       return res.status(401).json({
         success: false,
         message: 'Invalid or expired token. Please login again.'
       });
     }
 
+    const user = await User.findByAuthUserId(authUser.id);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User profile not found. Please complete your profile.'
+      });
+    }
+
+    req.user = user;
+    req.userId = user.id;
+    req.authUser = authUser;
+    req.authUserId = authUser.id;
+    next();
+  } catch (error) {
     console.error('Authentication error:', error);
     return res.status(500).json({
       success: false,
@@ -44,17 +44,6 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-// Generate JWT token
-const generateToken = (userId) => {
-  return jwt.sign(
-    { userId },
-    JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE || '7d' }
-  );
-};
-
 module.exports = {
-  authenticate,
-  generateToken
+  authenticate
 };
-

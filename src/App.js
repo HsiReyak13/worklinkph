@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import './App.css';
 
 // Import screens
@@ -10,6 +10,7 @@ import FindJobs from './screens/FindJobs';
 import Profile from './screens/Profile';
 import Resources from './screens/Resources';
 import OnboardingScreen from './screens/OnboardingScreen';
+import AuthCallback from './screens/AuthCallback';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -21,6 +22,13 @@ function App() {
       return false;
     }
   }, [currentScreen]);
+
+  // Check for OAuth callback on mount
+  useEffect(() => {
+    if (window.location.pathname === '/auth/callback' || window.location.hash.includes('access_token')) {
+      setCurrentScreen('auth/callback');
+    }
+  }, []);
 
   const handleNavigate = (screen) => {
     setCurrentScreen(screen);
@@ -56,6 +64,16 @@ function App() {
   };
 
   const renderScreen = () => {
+    // Check if we're on the OAuth callback route
+    if (window.location.pathname === '/auth/callback' || currentScreen === 'auth/callback') {
+      return (
+        <AuthCallback
+          onSuccess={handleLogin}
+          onNavigate={handleNavigate}
+        />
+      );
+    }
+
     switch (currentScreen) {
       case 'splash':
         return <SplashScreen onNavigate={handleNavigate} />;

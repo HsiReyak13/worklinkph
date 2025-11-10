@@ -3,6 +3,7 @@
 // In production, use REACT_APP_API_URL environment variable
 
 import { logger } from '../utils/logger';
+import { supabase } from '../config/supabase';
 
 const getApiBaseUrl = () => {
   // In development, use relative URL (proxied to backend)
@@ -15,9 +16,11 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Helper function for API requests
+// Helper function for API requests with Supabase Auth token
 const apiRequest = async (endpoint, options = {}) => {
-  const token = localStorage.getItem('token');
+  // Get Supabase session token
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
   
   const config = {
     headers: {
@@ -59,20 +62,57 @@ const apiRequest = async (endpoint, options = {}) => {
   }
 };
 
-// Authentication API
+// Authentication API using Supabase Auth
 export const authAPI = {
   register: async (userData) => {
-    return apiRequest('/auth/register', {
+    // Register through backend API (which uses Supabase Auth)
+    const response = await apiRequest('/auth/register', {
       method: 'POST',
       body: userData,
     });
+
+    // Save Supabase session if returned
+    if (response.data?.session) {
+      await supabase.auth.setSession({
+        access_token: response.data.session.access_token,
+        refresh_token: response.data.session.refresh_token
+      });
+    }
+
+    return response;
   },
 
   login: async (emailOrPhone, password) => {
-    return apiRequest('/auth/login', {
+    // Login through backend API (which uses Supabase Auth)
+    const response = await apiRequest('/auth/login', {
       method: 'POST',
       body: { emailOrPhone, password },
     });
+
+    // Save Supabase session if returned
+    if (response.data?.session) {
+      await supabase.auth.setSession({
+        access_token: response.data.session.access_token,
+        refresh_token: response.data.session.refresh_token
+      });
+    }
+
+    return response;
+  },
+
+  logout: async () => {
+    // Logout from Supabase Auth
+    await supabase.auth.signOut();
+    
+    // Also call backend logout endpoint
+    try {
+      await apiRequest('/auth/logout', {
+        method: 'POST',
+      });
+    } catch (error) {
+      // Ignore errors, Supabase logout is the important one
+      console.warn('Backend logout failed:', error);
+    }
   },
 
   forgotPassword: async (email) => {
@@ -82,11 +122,72 @@ export const authAPI = {
     });
   },
 
+  resetPassword: async (password) => {
+    return apiRequest('/auth/reset-password', {
+      method: 'POST',
+      body: { password },
+    });
+  },
+
   getCurrentUser: async () => {
     return apiRequest('/auth/me', {
       method: 'GET',
     });
   },
+
+  // Get current Supabase session
+  getSession: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+  },
+
+  // Check if user is authenticated
+  isAuthenticated: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return !!session;
+  },
+
+  // Listen to auth state changes
+  onAuthStateChange: (callback) => {
+    return supabase.auth.onAuthStateChange(callback);
+  },
+
+  // Google Sign-In
+  signInWithGoogle: async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Handle OAuth callback
+  handleAuthCallback: async () => {
+    // Get the session from URL hash
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) throw sessionError;
+    
+    if (session) {
+      // Check if user profile exists, if not create it
+      try {
+        const response = await apiRequest('/auth/google/callback', {
+          method: 'POST',
+          body: { session }
+        });
+        return response;
+      } catch (err) {
+        // If profile doesn't exist, create it
+        return { success: true, session, needsProfile: true };
+      }
+    }
+    
+    return { success: false };
+  }
 };
 
 // User API
@@ -213,18 +314,26 @@ export const resourcesAPI = {
   },
 };
 
-// Helper to save/remove token
+// Legacy token manager (kept for backward compatibility, but now uses Supabase sessions)
 export const tokenManager = {
-  save: (token) => {
-    localStorage.setItem('token', token);
+  save: async (session) => {
+    // Save Supabase session
+    if (session?.access_token && session?.refresh_token) {
+      await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token
+      });
+    }
   },
   
-  get: () => {
-    return localStorage.getItem('token');
+  get: async () => {
+    // Get Supabase session token
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || null;
   },
   
-  remove: () => {
-    localStorage.removeItem('token');
+  remove: async () => {
+    // Remove Supabase session
+    await supabase.auth.signOut();
   },
 };
-

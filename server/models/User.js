@@ -1,14 +1,14 @@
-const { dbHelpers } = require('../config/database');
-const bcrypt = require('bcryptjs');
+const { supabase } = require('../config/database');
 
 class User {
   static async create(userData) {
     const {
+      authUserId,
+      authProvider = 'email',
       firstName,
       lastName,
       email,
       phone,
-      password,
       city,
       province,
       identity,
@@ -16,72 +16,119 @@ class User {
       jobPreferences = {},
       accessibility = {},
       notifications = {},
-      onboardingCompleted = false
+      onboardingCompleted = false,
+      oauthMetadata = {}
     } = userData;
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // Create full_name for backward compatibility
     const fullName = `${firstName} ${lastName}`.trim();
 
-    const sql = `
-      INSERT INTO users (
-        full_name, first_name, last_name, email, phone, password_hash,
-        city, province, identity, skills,
-        job_preferences, accessibility_settings, notification_preferences,
-        onboarding_completed, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-    `;
+    const existingProfile = await this.findByAuthUserId(authUserId);
+    if (existingProfile) {
+      throw new Error('User profile already exists');
+    }
 
-    const preferences = JSON.stringify(jobPreferences);
-    const accessibilitySettings = JSON.stringify(accessibility);
-    const notificationPrefs = JSON.stringify(notifications);
+    const { data: existingEmail } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
 
-    const result = await dbHelpers.run(sql, [
-      fullName,
-      firstName,
-      lastName,
+    if (existingEmail) {
+      throw new Error('Email already registered');
+    }
+
+    if (phone) {
+      const { data: existingPhone } = await supabase
+        .from('users')
+        .select('id')
+        .eq('phone', phone)
+        .single();
+
+      if (existingPhone) {
+        throw new Error('Phone already registered');
+      }
+    }
+
+    const userDataToStore = {
+      auth_user_id: authUserId,
+      auth_provider: authProvider,
+      full_name: fullName,
+      first_name: firstName,
+      last_name: lastName,
       email,
-      phone,
-      hashedPassword,
-      city || null,
-      province || null,
-      identity || null,
-      skills || null,
-      preferences,
-      accessibilitySettings,
-      notificationPrefs,
-      onboardingCompleted ? 1 : 0
-    ]);
+      phone: phone || null,
+      city: city || null,
+      province: province || null,
+      identity: identity || null,
+      skills: skills || null,
+      job_preferences: jobPreferences,
+      accessibility_settings: accessibility,
+      notification_preferences: notifications,
+      onboarding_completed: onboardingCompleted,
+      oauth_metadata: oauthMetadata
+    };
 
-    return this.findById(result.lastID);
+    const { data, error } = await supabase
+      .from('users')
+      .insert(userDataToStore)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create user: ${error.message}`);
+    }
+
+    return this.sanitizeUser(data);
   }
 
   static async findById(id) {
-    const sql = 'SELECT * FROM users WHERE id = ?';
-    const user = await dbHelpers.get(sql, [id]);
-    return user ? this.sanitizeUser(user) : null;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) return null;
+    return this.sanitizeUser(data);
+  }
+
+  static async findByAuthUserId(authUserId) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('auth_user_id', authUserId)
+      .single();
+
+    if (error || !data) return null;
+    return this.sanitizeUser(data);
   }
 
   static async findByEmail(email) {
-    const sql = 'SELECT * FROM users WHERE email = ?';
-    const user = await dbHelpers.get(sql, [email]);
-    return user ? this.sanitizeUser(user) : null;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error || !data) return null;
+    return this.sanitizeUser(data);
   }
 
   static async findByEmailOrPhone(identifier) {
-    // Check if identifier is email or phone
     const isEmail = identifier.includes('@');
     
     if (isEmail) {
       return this.findByEmail(identifier);
     } else {
-      // Find by phone (remove any non-digits first)
       const phone = identifier.replace(/\D/g, '');
-      const sql = 'SELECT * FROM users WHERE phone = ?';
-      const user = await dbHelpers.get(sql, [phone]);
-      return user ? this.sanitizeUser(user) : null;
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('phone', phone)
+        .single();
+
+      if (error || !data) return null;
+      return this.sanitizeUser(data);
     }
   }
 
@@ -93,29 +140,23 @@ class User {
       'onboarding_completed'
     ];
 
-    const updates = [];
-    const values = [];
+    const updates = {};
     let hasFirstNameUpdate = false;
     let hasLastNameUpdate = false;
     let newFirstName = null;
     let newLastName = null;
 
     for (const [key, value] of Object.entries(updateData)) {
-      // Convert camelCase to snake_case
       const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
       
       if (allowedFields.includes(dbKey)) {
         if (dbKey === 'job_preferences' || dbKey === 'accessibility_settings' || dbKey === 'notification_preferences') {
-          updates.push(`${dbKey} = ?`);
-          values.push(JSON.stringify(value));
+          updates[dbKey] = value;
         } else if (dbKey === 'onboarding_completed') {
-          updates.push(`${dbKey} = ?`);
-          values.push(value ? 1 : 0);
+          updates[dbKey] = value;
         } else {
-          updates.push(`${dbKey} = ?`);
-          values.push(value);
+          updates[dbKey] = value;
           
-          // Track if firstName or lastName is being updated
           if (dbKey === 'first_name') {
             hasFirstNameUpdate = true;
             newFirstName = value;
@@ -127,34 +168,36 @@ class User {
       }
     }
 
-    // If first or last name changed, get current values and update full_name
     if (hasFirstNameUpdate || hasLastNameUpdate) {
-      const currentUser = await dbHelpers.get('SELECT first_name, last_name FROM users WHERE id = ?', [id]);
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('first_name, last_name')
+        .eq('id', id)
+        .single();
       
-      const firstName = hasFirstNameUpdate ? newFirstName : currentUser.first_name;
-      const lastName = hasLastNameUpdate ? newLastName : currentUser.last_name;
-      
-      // Update full_name for backward compatibility
-      const fullName = `${firstName} ${lastName}`.trim();
-      updates.push(`full_name = ?`);
-      values.splice(0, 0, fullName);
+      if (currentUser) {
+        const firstName = hasFirstNameUpdate ? newFirstName : currentUser.first_name;
+        const lastName = hasLastNameUpdate ? newLastName : currentUser.last_name;
+        updates.full_name = `${firstName} ${lastName}`.trim();
+      }
     }
 
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
       return null;
     }
 
-    updates.push(`updated_at = datetime('now')`);
-    values.push(id);
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-    const sql = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
-    await dbHelpers.run(sql, values);
+    if (error) {
+      throw new Error(`Failed to update user: ${error.message}`);
+    }
 
-    return this.findById(id);
-  }
-
-  static async verifyPassword(user, password) {
-    return bcrypt.compare(password, user.password_hash);
+    return data ? this.sanitizeUser(data) : null;
   }
 
   static sanitizeUser(user) {
@@ -164,51 +207,32 @@ class User {
       ...sanitized
     } = user;
 
-    // Parse JSON fields
-    if (sanitized.job_preferences) {
-      try {
-        sanitized.job_preferences = typeof sanitized.job_preferences === 'string' 
-          ? JSON.parse(sanitized.job_preferences) 
-          : sanitized.job_preferences;
-      } catch (e) {
-        sanitized.job_preferences = {};
-      }
-    }
-
-    if (sanitized.accessibility_settings) {
-      try {
-        sanitized.accessibility_settings = typeof sanitized.accessibility_settings === 'string'
-          ? JSON.parse(sanitized.accessibility_settings)
-          : sanitized.accessibility_settings;
-      } catch (e) {
-        sanitized.accessibility_settings = {};
-      }
-    }
-
-    if (sanitized.notification_preferences) {
-      try {
-        sanitized.notification_preferences = typeof sanitized.notification_preferences === 'string'
-          ? JSON.parse(sanitized.notification_preferences)
-          : sanitized.notification_preferences;
-      } catch (e) {
-        sanitized.notification_preferences = {};
-      }
-    }
-
-    // Convert onboarding_completed to boolean
     if (sanitized.onboarding_completed !== undefined) {
-      sanitized.onboarding_completed = sanitized.onboarding_completed === 1 || sanitized.onboarding_completed === true;
+      sanitized.onboarding_completed = sanitized.onboarding_completed === true || sanitized.onboarding_completed === 1;
+    }
+
+    if (sanitized.created_at && sanitized.created_at instanceof Date) {
+      sanitized.created_at = sanitized.created_at.toISOString();
+    }
+    if (sanitized.updated_at && sanitized.updated_at instanceof Date) {
+      sanitized.updated_at = sanitized.updated_at.toISOString();
     }
 
     return sanitized;
   }
 
   static async delete(id) {
-    const sql = 'DELETE FROM users WHERE id = ?';
-    await dbHelpers.run(sql, [id]);
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(`Failed to delete user: ${error.message}`);
+    }
+
     return true;
   }
 }
 
 module.exports = User;
-

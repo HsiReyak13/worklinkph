@@ -1,4 +1,4 @@
-const { dbHelpers } = require('../config/database');
+const { supabase } = require('../config/database');
 
 class Job {
   static async create(jobData) {
@@ -12,122 +12,164 @@ class Job {
       posted_by = null
     } = jobData;
 
-    const sql = `
-      INSERT INTO jobs (
-        title, company, location, description, type, tags, posted_by, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-    `;
-
-    const tagsJson = JSON.stringify(tags);
-
-    const result = await dbHelpers.run(sql, [
+    const jobDataToStore = {
       title,
       company,
       location,
       description,
-      type || 'full-time',
-      tagsJson,
-      posted_by
-    ]);
+      type: type || 'full-time',
+      tags: tags, // Supabase handles JSON/arrays natively
+      posted_by: posted_by || null
+    };
 
-    return this.findById(result.lastID);
+    const { data, error } = await supabase
+      .from('jobs')
+      .insert(jobDataToStore)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create job: ${error.message}`);
+    }
+
+    return this.parseJob(data);
   }
 
   static async findById(id) {
-    const sql = 'SELECT * FROM jobs WHERE id = ?';
-    const job = await dbHelpers.get(sql, [id]);
-    return job ? this.parseJob(job) : null;
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) return null;
+    return this.parseJob(data);
   }
 
   static async findAll(filters = {}) {
-    let sql = 'SELECT * FROM jobs WHERE 1=1';
-    const params = [];
+    let query = supabase
+      .from('jobs')
+      .select('*');
 
-    if (filters.search) {
-      sql += ' AND (title LIKE ? OR company LIKE ? OR location LIKE ? OR description LIKE ?)';
-      const searchTerm = `%${filters.search}%`;
-      params.push(searchTerm, searchTerm, searchTerm, searchTerm);
-    }
-
+    // Apply filters
     if (filters.type) {
-      sql += ' AND type = ?';
-      params.push(filters.type);
+      query = query.eq('type', filters.type);
     }
 
     if (filters.location) {
-      sql += ' AND location LIKE ?';
-      params.push(`%${filters.location}%`);
+      query = query.ilike('location', `%${filters.location}%`);
     }
 
-    if (filters.tags && filters.tags.length > 0) {
-      // SQLite JSON search for tags
-      const tagConditions = filters.tags.map(() => 'tags LIKE ?').join(' OR ');
-      sql += ` AND (${tagConditions})`;
-      filters.tags.forEach(tag => params.push(`%"${tag}"%`));
-    }
+    // Order by created_at descending
+    query = query.order('created_at', { ascending: false });
 
-    sql += ' ORDER BY created_at DESC';
-
+    // Apply limit
     if (filters.limit) {
-      sql += ` LIMIT ${parseInt(filters.limit)}`;
+      query = query.limit(parseInt(filters.limit));
     }
 
+    // Apply offset
     if (filters.offset) {
-      sql += ` OFFSET ${parseInt(filters.offset)}`;
+      query = query.range(
+        parseInt(filters.offset),
+        parseInt(filters.offset) + (parseInt(filters.limit) || 50) - 1
+      );
     }
 
-    const jobs = await dbHelpers.all(sql, params);
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to fetch jobs: ${error.message}`);
+    }
+
+    let jobs = data || [];
+
+    // Apply search filter (client-side for complex text search)
+    // For better performance, consider using Supabase full-text search
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      jobs = jobs.filter(job => 
+        job.title?.toLowerCase().includes(searchTerm) ||
+        job.company?.toLowerCase().includes(searchTerm) ||
+        job.location?.toLowerCase().includes(searchTerm) ||
+        job.description?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Apply tags filter
+    if (filters.tags && filters.tags.length > 0) {
+      jobs = jobs.filter(job => {
+        if (!job.tags || !Array.isArray(job.tags)) return false;
+        return filters.tags.some(tag => job.tags.includes(tag));
+      });
+    }
+
     return jobs.map(job => this.parseJob(job));
   }
 
   static async update(id, updateData) {
     const allowedFields = ['title', 'company', 'location', 'description', 'type', 'tags'];
 
-    const updates = [];
-    const values = [];
-
+    const updates = {};
     for (const [key, value] of Object.entries(updateData)) {
       if (allowedFields.includes(key)) {
-        if (key === 'tags') {
-          updates.push(`${key} = ?`);
-          values.push(JSON.stringify(value));
-        } else {
-          updates.push(`${key} = ?`);
-          values.push(value);
-        }
+        updates[key] = value;
       }
     }
 
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
       return null;
     }
 
-    updates.push(`updated_at = datetime('now')`);
-    values.push(id);
+    const { data, error } = await supabase
+      .from('jobs')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-    const sql = `UPDATE jobs SET ${updates.join(', ')} WHERE id = ?`;
-    await dbHelpers.run(sql, values);
+    if (error) {
+      throw new Error(`Failed to update job: ${error.message}`);
+    }
 
-    return this.findById(id);
+    return data ? this.parseJob(data) : null;
   }
 
   static async delete(id) {
-    const sql = 'DELETE FROM jobs WHERE id = ?';
-    await dbHelpers.run(sql, [id]);
+    const { error } = await supabase
+      .from('jobs')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(`Failed to delete job: ${error.message}`);
+    }
+
     return true;
   }
 
   static parseJob(job) {
-    if (job.tags) {
+    // Ensure tags is an array
+    if (job.tags && !Array.isArray(job.tags)) {
       try {
-        job.tags = typeof job.tags === 'string' ? JSON.parse(job.tags) : job.tags;
+        job.tags = typeof job.tags === 'string' ? JSON.parse(job.tags) : [];
       } catch (e) {
         job.tags = [];
       }
+    } else if (!job.tags) {
+      job.tags = [];
     }
+
+    // Convert timestamps to ISO strings if they're Date objects
+    if (job.created_at && job.created_at instanceof Date) {
+      job.created_at = job.created_at.toISOString();
+    }
+    if (job.updated_at && job.updated_at instanceof Date) {
+      job.updated_at = job.updated_at.toISOString();
+    }
+
     return job;
   }
 }
 
 module.exports = Job;
-
