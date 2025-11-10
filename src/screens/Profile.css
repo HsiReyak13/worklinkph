@@ -121,22 +121,24 @@
 .input-wrapper {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  width: 100%;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
   padding: 12px 16px;
-  padding-right: 40px;
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.3s ease;
   font-family: inherit;
   width: 100%;
+  box-sizing: border-box;
 }
 
+/* Inputs inside input-wrapper need extra padding for icons */
 .input-wrapper input {
   padding-right: 40px;
 }
@@ -160,18 +162,33 @@
 .success-icon {
   position: absolute;
   right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
+  justify-content: center;
   pointer-events: none;
-  font-size: 18px;
+  width: 20px;
+  height: 20px;
+  z-index: 1;
 }
 
 .error-icon {
   color: #ef4444;
 }
 
+.error-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
 .success-icon {
   color: #10b981;
+}
+
+.success-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .error-message {
