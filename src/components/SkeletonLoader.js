@@ -53,5 +53,3 @@ export const SkeletonList = ({ count = 3, SkeletonComponent }) => {
   );
 };
 
-export default SkeletonLoader;
-
