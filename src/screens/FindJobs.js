@@ -5,12 +5,14 @@ import Sidebar from '../components/Sidebar';
 import { jobsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { JobCardSkeleton, SkeletonList } from '../components/SkeletonLoader';
+import { useNavigation } from '../contexts/NavigationContext';
 
 const FindJobs = ({ onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
   const [filterOptions, setFilterOptions] = useState({
     jobType: [],
     location: [],
@@ -20,6 +22,7 @@ const FindJobs = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const toast = useToast();
+  const { updateBreadcrumbs } = useNavigation();
 
   // Fallback data in case API fails
   const fallbackJobs = [
@@ -166,8 +169,20 @@ const FindJobs = ({ onNavigate }) => {
   });
 
   const handleViewDetails = (jobId) => {
-    console.log('View details for job:', jobId);
-    // In a real app, this would navigate to job details page
+    const job = jobs.find(j => j.id === jobId);
+    if (job) {
+      setSelectedJob(job);
+      // Update breadcrumbs to show job details
+      updateBreadcrumbs([
+        { label: job.title, screen: null }
+      ]);
+    }
+  };
+
+  const closeJobDetails = () => {
+    setSelectedJob(null);
+    // Reset breadcrumbs to just Jobs
+    updateBreadcrumbs([]);
   };
 
   const toggleSidebar = () => {

@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar';
 import { resourcesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { ResourceCardSkeleton, SkeletonList } from '../components/SkeletonLoader';
+import { useNavigation } from '../contexts/NavigationContext';
 
 const Resources = ({ onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,6 +21,7 @@ const Resources = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const toast = useToast();
+  const { updateBreadcrumbs } = useNavigation();
 
   // Fallback data in case API fails
   const fallbackResources = [
@@ -304,10 +306,18 @@ const Resources = ({ onNavigate }) => {
   const handleMoreInfo = (resourceId) => {
     const resource = resources.find(r => r.id === resourceId);
     setSelectedResource(resource);
+    // Update breadcrumbs to show resource details
+    if (resource) {
+      updateBreadcrumbs([
+        { label: resource.title, screen: null }
+      ]);
+    }
   };
 
   const closeModal = () => {
     setSelectedResource(null);
+    // Reset breadcrumbs to just Resources
+    updateBreadcrumbs([]);
   };
 
   const handleVisit = (resourceId) => {
