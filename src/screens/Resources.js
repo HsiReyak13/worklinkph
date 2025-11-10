@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FiMenu, FiSearch, FiChevronUp, FiChevronDown, FiInfo, FiExternalLink, FiPhone, FiCheck, FiFileText, FiBriefcase, FiArrowRight, FiX } from 'react-icons/fi';
 import './Resources.css';
 import Sidebar from '../components/Sidebar';
 
@@ -293,14 +294,14 @@ const Resources = ({ onNavigate }) => {
       {/* Header */}
       <header className="resources-header">
         <h1 className="header-title" onClick={() => onNavigate('home')}>WorkLink PH</h1>
-        <button className="menu-button" onClick={toggleSidebar}>
-          ☰
+        <button className="menu-button" onClick={toggleSidebar} aria-label="Open menu">
+          <FiMenu size={24} />
         </button>
       </header>
 
       {/* Title */}
       <div className="resources-title-section">
-        <h2>Employment Resources Directory 👤</h2>
+        <h2>Employment Resources Directory</h2>
       </div>
 
       {/* Search Bar */}
@@ -313,13 +314,16 @@ const Resources = ({ onNavigate }) => {
             onChange={handleSearch}
             className="search-input"
           />
-          <span className="search-icon">🔍</span>
+          <span className="search-icon">
+            <FiSearch size={20} />
+          </span>
         </div>
         <button 
           className={`filter-button ${filterPanelOpen ? 'active' : ''}`}
           onClick={toggleFilterPanel}
         >
-          {filterPanelOpen ? '🔺' : '🔽'} Filter Resources
+          {filterPanelOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+          <span>Filter Resources</span>
         </button>
       </div>
 
@@ -410,13 +414,15 @@ const Resources = ({ onNavigate }) => {
                 className="more-info-button"
                 onClick={() => handleMoreInfo(resource.id)}
               >
-                ℹ️ More Info
+                <FiInfo size={16} />
+                <span>More Info</span>
               </button>
               <button 
                 className="visit-button"
                 onClick={() => handleVisit(resource.id)}
               >
-                Visit 🔗
+                <span>Visit</span>
+                <FiExternalLink size={16} />
               </button>
             </div>
           </div>
@@ -438,7 +444,9 @@ const Resources = ({ onNavigate }) => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{selectedResource.title}</h2>
-              <button className="modal-close" onClick={closeModal}>×</button>
+              <button className="modal-close" onClick={closeModal} aria-label="Close modal">
+                <FiX size={24} />
+              </button>
             </div>
             <div className="modal-body">
               <div className="modal-section">
@@ -458,23 +466,38 @@ const Resources = ({ onNavigate }) => {
               {selectedResource.details && (
                 <>
                   <div className="modal-section">
-                    <h3>📞 Contact Information</h3>
+                    <h3>
+                      <FiPhone size={18} />
+                      <span>Contact Information</span>
+                    </h3>
                     <p>{selectedResource.details.contact}</p>
                   </div>
                   <div className="modal-section">
-                    <h3>✓ Eligibility</h3>
+                    <h3>
+                      <FiCheck size={18} />
+                      <span>Eligibility</span>
+                    </h3>
                     <p>{selectedResource.details.eligibility}</p>
                   </div>
                   <div className="modal-section">
-                    <h3>📋 Requirements</h3>
+                    <h3>
+                      <FiFileText size={18} />
+                      <span>Requirements</span>
+                    </h3>
                     <p>{selectedResource.details.requirements}</p>
                   </div>
                   <div className="modal-section">
-                    <h3>💼 Benefits</h3>
+                    <h3>
+                      <FiBriefcase size={18} />
+                      <span>Benefits</span>
+                    </h3>
                     <p>{selectedResource.details.benefits}</p>
                   </div>
                   <div className="modal-section">
-                    <h3>🚀 How to Apply</h3>
+                    <h3>
+                      <FiArrowRight size={18} />
+                      <span>How to Apply</span>
+                    </h3>
                     <p>{selectedResource.details.howToApply}</p>
                   </div>
                 </>
@@ -482,7 +505,8 @@ const Resources = ({ onNavigate }) => {
             </div>
             <div className="modal-footer">
               <button className="visit-button" onClick={() => handleVisit(selectedResource.id)}>
-                Visit Website 🔗
+                <span>Visit Website</span>
+                <FiExternalLink size={16} />
               </button>
               <button className="modal-close-button" onClick={closeModal}>
                 Close

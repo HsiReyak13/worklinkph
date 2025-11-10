@@ -37,6 +37,14 @@
   font-size: 1.5rem;
   cursor: pointer;
   padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+}
+
+.menu-button:hover {
+  opacity: 0.8;
 }
 
 .profile-hero {
@@ -54,6 +62,15 @@
 .profile-avatar {
   font-size: 4rem;
   margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  width: 100px;
+  height: 100px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  margin: 0 auto 15px auto;
 }
 
 .profile-hero h2 {
@@ -219,10 +236,10 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .signout-button:hover {

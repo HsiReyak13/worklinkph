@@ -37,6 +37,14 @@
   font-size: 1.5rem;
   cursor: pointer;
   padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+}
+
+.menu-button:hover {
+  opacity: 0.8;
 }
 
 .hero-section {
@@ -86,6 +94,10 @@
   cursor: pointer;
   transition: all 0.3s ease;
   min-width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .hero-button.primary {
@@ -139,6 +151,10 @@
 .feature-icon {
   font-size: 2.5rem;
   margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
 }
 
 .feature-card h4 {
@@ -255,6 +271,9 @@
   cursor: pointer;
   opacity: 0.7;
   transition: opacity 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .footer-links span:hover {
@@ -264,6 +283,10 @@
 .footer-love {
   font-size: 0.9rem;
   opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 /* Mobile responsiveness */

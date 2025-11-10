@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FiMenu, FiSearch, FiBook, FiBriefcase, FiFileText, FiUser, FiPhone, FiMail, FiShare2, FiHeart } from 'react-icons/fi';
 import './HomeDashboard.css';
 import Sidebar from '../components/Sidebar';
 
@@ -30,8 +31,8 @@ const HomeDashboard = ({ onNavigate }) => {
       {/* Header */}
       <header className="dashboard-header">
         <h1 className="header-title" onClick={() => onNavigate('home')}>WorkLink PH</h1>
-        <button className="menu-button" onClick={toggleSidebar}>
-          ☰
+        <button className="menu-button" onClick={toggleSidebar} aria-label="Open menu">
+          <FiMenu size={24} />
         </button>
       </header>
 
@@ -45,10 +46,12 @@ const HomeDashboard = ({ onNavigate }) => {
           </p>
           <div className="hero-buttons">
             <button className="hero-button primary" onClick={handleFindJobs}>
-              🔍 Find Jobs
+              <FiSearch size={18} />
+              <span>Find Jobs</span>
             </button>
             <button className="hero-button secondary" onClick={handleResources}>
-              📚 Resources
+              <FiBook size={18} />
+              <span>Resources</span>
             </button>
           </div>
         </div>
@@ -59,17 +62,23 @@ const HomeDashboard = ({ onNavigate }) => {
         <h3>How WorkLink PH Helps You</h3>
         <div className="features-grid">
           <div className="feature-card">
-            <div className="feature-icon">💼</div>
+            <div className="feature-icon">
+              <FiBriefcase size={40} />
+            </div>
             <h4>Inclusive Job Matching</h4>
             <p>Find employment opportunities tailored to your specific needs and abilities.</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">📖</div>
+            <div className="feature-icon">
+              <FiFileText size={40} />
+            </div>
             <h4>Resource Directory</h4>
             <p>Access a comprehensive list of services and support organizations.</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">👤</div>
+            <div className="feature-icon">
+              <FiUser size={40} />
+            </div>
             <h4>Personalized Experience</h4>
             <p>Customize your profile to receive recommendations that match your preferences.</p>
           </div>
@@ -114,11 +123,13 @@ const HomeDashboard = ({ onNavigate }) => {
           <h4>WorkLink PH</h4>
           <p>Inclusive Employment & Empowerment</p>
           <div className="footer-links">
-            <span>📞</span>
-            <span>✉️</span>
-            <span>📤</span>
+            <span><FiPhone size={20} /></span>
+            <span><FiMail size={20} /></span>
+            <span><FiShare2 size={20} /></span>
           </div>
-          <p className="footer-love">Made with ❤️ for inclusivity</p>
+          <p className="footer-love">
+            Made with <FiHeart size={14} /> for inclusivity
+          </p>
         </div>
       </footer>
 

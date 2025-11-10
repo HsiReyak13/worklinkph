@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FiMenu, FiSearch, FiChevronUp, FiChevronDown, FiMapPin, FiExternalLink } from 'react-icons/fi';
 import './FindJobs.css';
 import Sidebar from '../components/Sidebar';
 
@@ -135,14 +136,14 @@ const FindJobs = ({ onNavigate }) => {
       {/* Header */}
       <header className="jobs-header">
         <h1 className="header-title" onClick={() => onNavigate('home')}>WorkLink PH</h1>
-        <button className="menu-button" onClick={toggleSidebar}>
-          ☰
+        <button className="menu-button" onClick={toggleSidebar} aria-label="Open menu">
+          <FiMenu size={24} />
         </button>
       </header>
 
       {/* Title */}
       <div className="jobs-title-section">
-        <h2>Find Inclusive Job Opportunities 👤</h2>
+        <h2>Find Inclusive Job Opportunities</h2>
       </div>
 
       {/* Search Bar */}
@@ -155,13 +156,16 @@ const FindJobs = ({ onNavigate }) => {
             onChange={handleSearch}
             className="search-input"
           />
-          <span className="search-icon">🔍</span>
+          <span className="search-icon">
+            <FiSearch size={20} />
+          </span>
         </div>
         <button 
           className={`filter-button ${filterPanelOpen ? 'active' : ''}`}
           onClick={toggleFilterPanel}
         >
-          {filterPanelOpen ? '🔺' : '🔽'} Filter Jobs
+          {filterPanelOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+          <span>Filter Jobs</span>
         </button>
       </div>
 
@@ -233,7 +237,10 @@ const FindJobs = ({ onNavigate }) => {
       {/* Job Count and Location */}
       <div className="jobs-info">
         <span className="job-count">{filteredJobs.length} jobs found</span>
-        <span className="location">📍 Philippines</span>
+        <span className="location">
+          <FiMapPin size={16} />
+          <span>Philippines</span>
+        </span>
       </div>
 
       {/* Job Listings */}
@@ -267,7 +274,8 @@ const FindJobs = ({ onNavigate }) => {
               className="view-details-button"
               onClick={() => handleViewDetails(job.id)}
             >
-              View Details 🔗
+              <span>View Details</span>
+              <FiExternalLink size={16} />
             </button>
           </div>
         ))}

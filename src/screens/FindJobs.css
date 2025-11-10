@@ -37,6 +37,14 @@
   font-size: 1.5rem;
   cursor: pointer;
   padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+}
+
+.menu-button:hover {
+  opacity: 0.8;
 }
 
 .jobs-title-section {
@@ -85,6 +93,10 @@
   transform: translateY(-50%);
   font-size: 1.2rem;
   color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }
 
 .filter-button {
@@ -98,6 +110,10 @@
   cursor: pointer;
   white-space: nowrap;
   transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .filter-button:hover {
@@ -227,6 +243,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
+  flex-wrap: wrap;
 }
 
 .jobs-list {
@@ -315,9 +332,9 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .view-details-button:hover {

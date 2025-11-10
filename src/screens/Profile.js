@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FiMenu, FiUser, FiArrowRight } from 'react-icons/fi';
 import './Profile.css';
 import Sidebar from '../components/Sidebar';
 
@@ -81,15 +82,17 @@ const Profile = ({ onNavigate }) => {
       {/* Header */}
       <header className="profile-header">
         <h1 className="header-title" onClick={() => onNavigate('home')}>WorkLink PH</h1>
-        <button className="menu-button" onClick={toggleSidebar}>
-          ☰
+        <button className="menu-button" onClick={toggleSidebar} aria-label="Open menu">
+          <FiMenu size={24} />
         </button>
       </header>
 
       {/* Profile Header Section */}
       <section className="profile-hero">
         <div className="profile-hero-content">
-          <div className="profile-avatar">👤</div>
+          <div className="profile-avatar">
+            <FiUser size={64} />
+          </div>
           <h2>My Profile</h2>
           <p>Customize your experience</p>
         </div>
@@ -330,7 +333,8 @@ const Profile = ({ onNavigate }) => {
           Save Profile
         </button>
         <button className="signout-button" onClick={handleSignOut}>
-          Sign Out →
+          <span>Sign Out</span>
+          <FiArrowRight size={18} />
         </button>
       </section>
 
