@@ -11,6 +11,7 @@ import Profile from './screens/Profile';
 import Resources from './screens/Resources';
 import OnboardingScreen from './screens/OnboardingScreen';
 import AuthCallback from './screens/AuthCallback';
+import { ToastProvider } from './components/Toast';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -97,11 +98,13 @@ function App() {
   };
 
   return (
-    <div className="app-shell">
-      <div className="app-container">
-        {renderScreen()}
+    <ToastProvider>
+      <div className="app-shell">
+        <div className="app-container">
+          {renderScreen()}
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 }
 

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import './SignUpScreen.css';
 import { authAPI } from '../services/api';
 import { supabase } from '../config/supabase';
+import { useToast } from '../components/Toast';
 
 const SignUpScreen = ({ onNavigate, onSignUp }) => {
   const [step, setStep] = useState(1);
@@ -10,6 +12,10 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [touched, setTouched] = useState({});
+  const [success, setSuccess] = useState(false);
+  const toast = useToast();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -18,8 +24,58 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
     confirmPassword: ''
   });
 
+  const validateField = (name, value) => {
+    const errors = {};
+    
+    switch (name) {
+      case 'fullName':
+        if (!value.trim()) {
+          errors.fullName = 'Full name is required';
+        } else if (value.trim().split(/\s+/).length < 2) {
+          errors.fullName = 'Please enter both first and last name';
+        }
+        break;
+      case 'email':
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!value.trim()) {
+          errors.email = 'Email is required';
+        } else if (!emailRegex.test(value)) {
+          errors.email = 'Please enter a valid email address';
+        }
+        break;
+      case 'phone':
+        if (!value.trim()) {
+          errors.phone = 'Phone number is required';
+        } else if (!/^09\d{9}$/.test(value)) {
+          errors.phone = 'Please enter a valid Philippine phone number (09XXXXXXXXX)';
+        }
+        break;
+      case 'password':
+        if (!value) {
+          errors.password = 'Password is required';
+        } else if (value.length < 6) {
+          errors.password = 'Password must be at least 6 characters';
+        }
+        break;
+      case 'confirmPassword':
+        if (!value) {
+          errors.confirmPassword = 'Please confirm your password';
+        } else if (value !== formData.password) {
+          errors.confirmPassword = 'Passwords do not match';
+        }
+        break;
+      default:
+        break;
+    }
+    
+    return errors;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Mark field as touched
+    setTouched(prev => ({ ...prev, [name]: true }));
     
     // Special handling for phone number - only allow digits and limit to 11 characters
     if (name === 'phone') {
@@ -28,19 +84,100 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
         ...prev,
         [name]: phoneValue
       }));
+      
+      // Validate phone
+      if (phoneValue) {
+        const errors = validateField('phone', phoneValue);
+        setValidationErrors(prev => ({ ...prev, ...errors }));
+      } else {
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.phone;
+          return newErrors;
+        });
+      }
     } else {
       setFormData(prev => ({
         ...prev,
         [name]: value
       }));
+      
+      // Validate field
+      const errors = validateField(name, value);
+      if (name === 'confirmPassword' && value && value === formData.password) {
+        // Clear error if passwords match
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.confirmPassword;
+          return newErrors;
+        });
+      } else if (Object.keys(errors).length > 0) {
+        setValidationErrors(prev => ({ ...prev, ...errors }));
+      } else {
+        // Clear error for this field
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
     }
+    
     // Clear error when user types
     if (error) setError('');
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    
+    // Validate field on blur
+    const errors = validateField(name, value);
+    if (name === 'confirmPassword' && value && value !== formData.password) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    setValidationErrors(prev => ({
+      ...prev,
+      ...errors
+    }));
   };
 
   const handleNext = async (e) => {
     e.preventDefault();
     if (step === 1) {
+      // Validate step 1 fields
+      const errors = {};
+      if (!formData.fullName.trim()) {
+        errors.fullName = 'Full name is required';
+      } else if (formData.fullName.trim().split(/\s+/).length < 2) {
+        errors.fullName = 'Please enter both first and last name';
+      }
+      if (!formData.email.trim()) {
+        errors.email = 'Email is required';
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+          errors.email = 'Please enter a valid email address';
+        }
+      }
+      if (!formData.phone.trim()) {
+        errors.phone = 'Phone number is required';
+      } else if (!/^09\d{9}$/.test(formData.phone)) {
+        errors.phone = 'Please enter a valid Philippine phone number (09XXXXXXXXX)';
+      }
+      
+      setValidationErrors(errors);
+      setTouched({
+        fullName: true,
+        email: true,
+        phone: true
+      });
+      
+      if (Object.keys(errors).length > 0) {
+        toast.error('Please fix the validation errors before continuing');
+        return;
+      }
+      
       setStep(2);
     } else {
       // Complete signup
@@ -48,6 +185,32 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
       setLoading(true);
 
       try {
+        // Validate step 2 fields
+        const errors = {};
+        if (!formData.password) {
+          errors.password = 'Password is required';
+        } else if (formData.password.length < 6) {
+          errors.password = 'Password must be at least 6 characters';
+        }
+        if (!formData.confirmPassword) {
+          errors.confirmPassword = 'Please confirm your password';
+        } else if (formData.password !== formData.confirmPassword) {
+          errors.confirmPassword = 'Passwords do not match';
+        }
+        
+        setValidationErrors(errors);
+        setTouched(prev => ({
+          ...prev,
+          password: true,
+          confirmPassword: true
+        }));
+        
+        if (Object.keys(errors).length > 0) {
+          toast.error('Please fix the validation errors before registering');
+          setLoading(false);
+          return;
+        }
+
         // Split full name into first and last name
         const nameParts = formData.fullName.trim().split(/\s+/);
         const firstName = nameParts[0] || '';
@@ -71,15 +234,23 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
         const response = await authAPI.register(userData);
         
         if (response.success) {
+          setSuccess(true);
+          toast.success('Account created successfully!');
           // Session is automatically saved by authAPI
-          if (onSignUp) {
-            onSignUp();
-          }
+          setTimeout(() => {
+            if (onSignUp) {
+              onSignUp();
+            }
+          }, 1000);
         } else {
-          setError(response.message || 'Registration failed. Please try again.');
+          const errorMsg = response.message || 'Registration failed. Please try again.';
+          setError(errorMsg);
+          toast.error(errorMsg);
         }
       } catch (err) {
-        setError(err.message || 'Registration failed. Please check your information and try again.');
+        const errorMsg = err.message || 'Registration failed. Please check your information and try again.';
+        setError(errorMsg);
+        toast.error(errorMsg);
       } finally {
         setLoading(false);
       }
@@ -96,10 +267,13 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
     
     try {
       await authAPI.signInWithGoogle();
+      toast.info('Redirecting to Google sign-in...');
       // OAuth redirect will happen, so we don't need to handle success here
       // The callback will be handled by AuthCallback component
     } catch (err) {
-      setError(err.message || 'Google sign-in failed. Please try again.');
+      const errorMsg = err.message || 'Google sign-in failed. Please try again.';
+      setError(errorMsg);
+      toast.error(errorMsg);
       setGoogleLoading(false);
     }
   };
@@ -131,43 +305,112 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
       <form onSubmit={handleNext} className="signup-form">
         <div className="form-group">
           <label htmlFor="fullName">Full Name</label>
-          <input
-            type="text"
-            id="fullName"
-            name="fullName"
-            value={formData.fullName}
-            onChange={handleInputChange}
-            placeholder="Enter your full name"
-            required
-          />
+          <div className="input-wrapper">
+            <input
+              type="text"
+              id="fullName"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              placeholder="Enter your full name"
+              className={
+                touched.fullName && validationErrors.fullName
+                  ? 'input-error'
+                  : touched.fullName && !validationErrors.fullName && formData.fullName
+                  ? 'input-success'
+                  : ''
+              }
+              required
+            />
+            {touched.fullName && validationErrors.fullName && (
+              <span className="error-icon" title={validationErrors.fullName}>
+                <FiAlertCircle />
+              </span>
+            )}
+            {touched.fullName && !validationErrors.fullName && formData.fullName && (
+              <span className="success-icon" title="Valid">
+                <FiCheckCircle />
+              </span>
+            )}
+          </div>
+          {touched.fullName && validationErrors.fullName && (
+            <span className="error-message">{validationErrors.fullName}</span>
+          )}
         </div>
 
         <div className="form-group">
           <label htmlFor="email">Email Address</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            placeholder="Enter your email address"
-            required
-          />
+          <div className="input-wrapper">
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              placeholder="Enter your email address"
+              className={
+                touched.email && validationErrors.email
+                  ? 'input-error'
+                  : touched.email && !validationErrors.email && formData.email
+                  ? 'input-success'
+                  : ''
+              }
+              required
+            />
+            {touched.email && validationErrors.email && (
+              <span className="error-icon" title={validationErrors.email}>
+                <FiAlertCircle />
+              </span>
+            )}
+            {touched.email && !validationErrors.email && formData.email && (
+              <span className="success-icon" title="Valid">
+                <FiCheckCircle />
+              </span>
+            )}
+          </div>
+          {touched.email && validationErrors.email && (
+            <span className="error-message">{validationErrors.email}</span>
+          )}
         </div>
 
         <div className="form-group">
           <label htmlFor="phone">Phone Number</label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleInputChange}
-            placeholder="09XXXXXXXXX"
-            maxLength="11"
-            pattern="09[0-9]{9}"
-            required
-          />
+          <div className="input-wrapper">
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              placeholder="09XXXXXXXXX"
+              maxLength="11"
+              pattern="09[0-9]{9}"
+              className={
+                touched.phone && validationErrors.phone
+                  ? 'input-error'
+                  : touched.phone && !validationErrors.phone && formData.phone
+                  ? 'input-success'
+                  : ''
+              }
+              required
+            />
+            {touched.phone && validationErrors.phone && (
+              <span className="error-icon" title={validationErrors.phone}>
+                <FiAlertCircle />
+              </span>
+            )}
+            {touched.phone && !validationErrors.phone && formData.phone && (
+              <span className="success-icon" title="Valid">
+                <FiCheckCircle />
+              </span>
+            )}
+          </div>
+          {touched.phone && validationErrors.phone && (
+            <span className="error-message">{validationErrors.phone}</span>
+          )}
         </div>
 
         {error && (
@@ -228,7 +471,15 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
               name="password"
               value={formData.password}
               onChange={handleInputChange}
+              onBlur={handleBlur}
               placeholder="Create a strong password"
+              className={
+                touched.password && validationErrors.password
+                  ? 'input-error'
+                  : touched.password && !validationErrors.password && formData.password
+                  ? 'input-success'
+                  : ''
+              }
               required
             />
             <button
@@ -260,8 +511,21 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
                 )}
               </svg>
             </button>
+            {touched.password && validationErrors.password && (
+              <span className="error-icon-password" title={validationErrors.password}>
+                <FiAlertCircle />
+              </span>
+            )}
+            {touched.password && !validationErrors.password && formData.password && (
+              <span className="success-icon-password" title="Valid">
+                <FiCheckCircle />
+              </span>
+            )}
           </div>
-          {formData.password && (
+          {touched.password && validationErrors.password && (
+            <span className="error-message">{validationErrors.password}</span>
+          )}
+          {formData.password && !validationErrors.password && (
             <div className="password-strength">
               <div className="strength-bar">
                 <div 
@@ -288,7 +552,15 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
+              onBlur={handleBlur}
               placeholder="Confirm your password"
+              className={
+                touched.confirmPassword && validationErrors.confirmPassword
+                  ? 'input-error'
+                  : touched.confirmPassword && !validationErrors.confirmPassword && formData.confirmPassword
+                  ? 'input-success'
+                  : ''
+              }
               required
             />
             <button
@@ -320,11 +592,19 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
                 )}
               </svg>
             </button>
+            {touched.confirmPassword && validationErrors.confirmPassword && (
+              <span className="error-icon-password" title={validationErrors.confirmPassword}>
+                <FiAlertCircle />
+              </span>
+            )}
+            {touched.confirmPassword && !validationErrors.confirmPassword && formData.confirmPassword && (
+              <span className="success-icon-password" title="Valid">
+                <FiCheckCircle />
+              </span>
+            )}
           </div>
-          {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-            <div className="password-mismatch">
-              Passwords do not match
-            </div>
+          {touched.confirmPassword && validationErrors.confirmPassword && (
+            <span className="error-message">{validationErrors.confirmPassword}</span>
           )}
         </div>
 

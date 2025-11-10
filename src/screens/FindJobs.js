@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiMenu, FiSearch, FiChevronUp, FiChevronDown, FiMapPin, FiExternalLink } from 'react-icons/fi';
 import './FindJobs.css';
 import Sidebar from '../components/Sidebar';
+import { jobsAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { JobCardSkeleton, SkeletonList } from '../components/SkeletonLoader';
 
 const FindJobs = ({ onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,8 +16,13 @@ const FindJobs = ({ onNavigate }) => {
     location: [],
     tags: []
   });
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const toast = useToast();
 
-  const jobs = [
+  // Fallback data in case API fails
+  const fallbackJobs = [
     {
       id: 1,
       title: 'Customer Service Representative',
@@ -56,6 +64,45 @@ const FindJobs = ({ onNavigate }) => {
       type: 'field'
     }
   ];
+
+  // Fetch jobs from API on mount
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await jobsAPI.getAll();
+        if (response.success && response.data?.jobs && response.data.jobs.length > 0) {
+          // Transform API response to match expected format
+          const transformedJobs = response.data.jobs.map(job => ({
+            id: job.id,
+            title: job.title,
+            company: job.company,
+            location: job.location,
+            posted: job.posted_at ? new Date(job.posted_at).toLocaleDateString() : 'Recently',
+            tags: Array.isArray(job.tags) ? job.tags : (job.tags ? [job.tags] : []),
+            description: job.description,
+            type: job.type || 'full-time'
+          }));
+          setJobs(transformedJobs);
+        } else {
+          // Use fallback data if API returns no data
+          setJobs(fallbackJobs);
+        }
+      } catch (err) {
+        console.error('Error fetching jobs:', err);
+        setError(err.message);
+        // Use fallback data on error
+        setJobs(fallbackJobs);
+        toast.error('Failed to load jobs. Showing cached data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -245,49 +292,53 @@ const FindJobs = ({ onNavigate }) => {
 
       {/* Job Listings */}
       <div className="jobs-list">
-        {filteredJobs.map(job => (
-          <div key={job.id} className="job-card">
-            <div className="job-header">
-              <h3 className="job-title">{job.title}</h3>
-              <div className="job-meta">
-                <span className="job-company">{job.company}</span>
-                <span className="job-location">{job.location}</span>
-                <span className="job-posted">Posted {job.posted}</span>
+        {loading ? (
+          <SkeletonList count={3} SkeletonComponent={JobCardSkeleton} />
+        ) : (
+          filteredJobs.map(job => (
+            <div key={job.id} className="job-card">
+              <div className="job-header">
+                <h3 className="job-title">{job.title}</h3>
+                <div className="job-meta">
+                  <span className="job-company">{job.company}</span>
+                  <span className="job-location">{job.location}</span>
+                  <span className="job-posted">Posted {job.posted}</span>
+                </div>
               </div>
+              
+              <div className="job-tags">
+                {job.tags.map((tag, index) => (
+                  <span 
+                    key={index} 
+                    className={`job-tag ${selectedFilters.includes(tag) ? 'selected' : ''}`}
+                    onClick={() => handleFilterToggle(tag)}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              
+              <p className="job-description">{job.description}</p>
+              
+              <button 
+                className="view-details-button"
+                onClick={() => handleViewDetails(job.id)}
+              >
+                <span>View Details</span>
+                <FiExternalLink size={16} />
+              </button>
             </div>
-            
-            <div className="job-tags">
-              {job.tags.map((tag, index) => (
-                <span 
-                  key={index} 
-                  className={`job-tag ${selectedFilters.includes(tag) ? 'selected' : ''}`}
-                  onClick={() => handleFilterToggle(tag)}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            
-            <p className="job-description">{job.description}</p>
-            
-            <button 
-              className="view-details-button"
-              onClick={() => handleViewDetails(job.id)}
-            >
-              <span>View Details</span>
-              <FiExternalLink size={16} />
-            </button>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
-      {filteredJobs.length === 0 && (
+      {!loading && filteredJobs.length === 0 && (
         <div className="no-jobs">
           <p>No jobs found matching your criteria.</p>
-          <button onClick={() => {setSearchTerm(''); setSelectedFilters([]);}}>
-          Clear Filters
-        </button>
-      </div>
+          <button onClick={clearAllFilters}>
+            Clear Filters
+          </button>
+        </div>
       )}
 
       {/* Sidebar */}

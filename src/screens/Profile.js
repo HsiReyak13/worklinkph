@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
-import { FiMenu, FiUser, FiArrowRight } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiMenu, FiUser, FiArrowRight, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import './Profile.css';
 import Sidebar from '../components/Sidebar';
+import { userAPI } from '../services/api';
+import { useToast } from '../components/Toast';
 
 const Profile = ({ onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [touched, setTouched] = useState({});
+  const toast = useToast();
+  
   const [profileData, setProfileData] = useState({
     fullName: '',
     email: '',
@@ -31,8 +40,92 @@ const Profile = ({ onNavigate }) => {
     }
   });
 
+  // Load user profile on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      setLoading(true);
+      try {
+        const response = await userAPI.getProfile();
+        if (response.success && response.data) {
+          const user = response.data.user || response.data;
+          const fullName = user.fullName || 
+            (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : '') ||
+            user.full_name || '';
+          setProfileData(prev => ({
+            ...prev,
+            fullName,
+            email: user.email || '',
+            phone: user.phone || '',
+            city: user.city || '',
+            province: user.province || '',
+            identity: user.identity || '',
+            skills: user.skills || '',
+            jobPreferences: user.jobPreferences || user.job_preferences || prev.jobPreferences,
+            accessibility: user.accessibility || user.accessibility_settings || prev.accessibility,
+            notifications: user.notifications || user.notification_preferences || prev.notifications
+          }));
+        }
+      } catch (err) {
+        console.error('Error loading profile:', err);
+        toast.error('Failed to load profile data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Validation functions
+  const validateField = (name, value) => {
+    const errors = {};
+    
+    switch (name) {
+      case 'fullName':
+        if (!value.trim()) {
+          errors.fullName = 'Full name is required';
+        } else if (value.trim().split(/\s+/).length < 2) {
+          errors.fullName = 'Please enter both first and last name';
+        }
+        break;
+      case 'email':
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!value.trim()) {
+          errors.email = 'Email is required';
+        } else if (!emailRegex.test(value)) {
+          errors.email = 'Please enter a valid email address';
+        }
+        break;
+      case 'phone':
+        if (value && !/^09\d{9}$/.test(value)) {
+          errors.phone = 'Please enter a valid Philippine phone number (09XXXXXXXXX)';
+        }
+        break;
+      default:
+        break;
+    }
+    
+    return errors;
+  };
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    // Mark field as touched
+    setTouched(prev => ({ ...prev, [name]: true }));
+    
+    // Clear validation error for this field
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[name];
+      return newErrors;
+    });
+    
+    // Clear success state when user makes changes
+    if (success) {
+      setSuccess(false);
+    }
     
     // Special handling for phone number - only allow digits and limit to 11 characters
     if (name === 'phone') {
@@ -41,6 +134,14 @@ const Profile = ({ onNavigate }) => {
         ...prev,
         [name]: phoneValue
       }));
+      
+      // Validate phone
+      if (phoneValue) {
+        const errors = validateField('phone', phoneValue);
+        if (errors.phone) {
+          setValidationErrors(prev => ({ ...prev, ...errors }));
+        }
+      }
     } else if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setProfileData(prev => ({
@@ -55,13 +156,101 @@ const Profile = ({ onNavigate }) => {
         ...prev,
         [name]: type === 'checkbox' ? checked : value
       }));
+      
+      // Validate field on change
+      if (type !== 'checkbox') {
+        const errors = validateField(name, value);
+        if (Object.keys(errors).length > 0) {
+          setValidationErrors(prev => ({ ...prev, ...errors }));
+        }
+      }
     }
   };
 
-  const handleSaveProfile = () => {
-    console.log('Saving profile:', profileData);
-    // In a real app, this would save to backend
-    alert('Profile saved successfully!');
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    
+    // Validate field on blur
+    const errors = validateField(name, value);
+    setValidationErrors(prev => ({
+      ...prev,
+      ...errors
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    // Validate all fields
+    const errors = {};
+    if (!profileData.fullName.trim()) {
+      errors.fullName = 'Full name is required';
+    }
+    if (!profileData.email.trim()) {
+      errors.email = 'Email is required';
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (profileData.email && !emailRegex.test(profileData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    // Validate phone if provided
+    if (profileData.phone && !/^09\d{9}$/.test(profileData.phone)) {
+      errors.phone = 'Please enter a valid Philippine phone number (09XXXXXXXXX)';
+    }
+    
+    setValidationErrors(errors);
+    setTouched({
+      fullName: true,
+      email: true,
+      phone: true
+    });
+    
+    if (Object.keys(errors).length > 0) {
+      toast.error('Please fix the validation errors before saving');
+      return;
+    }
+    
+    setSaving(true);
+    setSuccess(false);
+    
+    try {
+      // Split full name into first and last name
+      const nameParts = profileData.fullName.trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      const updateData = {
+        firstName,
+        lastName,
+        email: profileData.email,
+        phone: profileData.phone || null,
+        city: profileData.city || null,
+        province: profileData.province || null,
+        identity: profileData.identity || null,
+        skills: profileData.skills || null,
+        jobPreferences: profileData.jobPreferences,
+        accessibility: profileData.accessibility,
+        notifications: profileData.notifications
+      };
+      
+      const response = await userAPI.updateProfile(updateData);
+      
+      if (response.success) {
+        setSuccess(true);
+        toast.success('Profile saved successfully!');
+        // Clear success state after 3 seconds
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        toast.error(response.message || 'Failed to save profile');
+      }
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      toast.error(err.message || 'Failed to save profile. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSignOut = () => {
@@ -104,40 +293,109 @@ const Profile = ({ onNavigate }) => {
         <div className="form-grid">
           <div className="form-group">
             <label htmlFor="fullName">Full Name</label>
-            <input
-              type="text"
-              id="fullName"
-              name="fullName"
-              value={profileData.fullName}
-              onChange={handleInputChange}
-              placeholder="Enter your full name"
-            />
+            <div className="input-wrapper">
+              <input
+                type="text"
+                id="fullName"
+                name="fullName"
+                value={profileData.fullName}
+                onChange={handleInputChange}
+                onBlur={handleBlur}
+                placeholder="Enter your full name"
+                className={
+                  touched.fullName && validationErrors.fullName
+                    ? 'input-error'
+                    : touched.fullName && !validationErrors.fullName && profileData.fullName
+                    ? 'input-success'
+                    : ''
+                }
+              />
+              {touched.fullName && validationErrors.fullName && (
+                <span className="error-icon" title={validationErrors.fullName}>
+                  <FiAlertCircle />
+                </span>
+              )}
+              {touched.fullName && !validationErrors.fullName && profileData.fullName && (
+                <span className="success-icon" title="Valid">
+                  <FiCheckCircle />
+                </span>
+              )}
+            </div>
+            {touched.fullName && validationErrors.fullName && (
+              <span className="error-message">{validationErrors.fullName}</span>
+            )}
           </div>
           
           <div className="form-group">
             <label htmlFor="email">Email Address</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={profileData.email}
-              onChange={handleInputChange}
-              placeholder="Enter your email"
-            />
+            <div className="input-wrapper">
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={profileData.email}
+                onChange={handleInputChange}
+                onBlur={handleBlur}
+                placeholder="Enter your email"
+                className={
+                  touched.email && validationErrors.email
+                    ? 'input-error'
+                    : touched.email && !validationErrors.email && profileData.email
+                    ? 'input-success'
+                    : ''
+                }
+              />
+              {touched.email && validationErrors.email && (
+                <span className="error-icon" title={validationErrors.email}>
+                  <FiAlertCircle />
+                </span>
+              )}
+              {touched.email && !validationErrors.email && profileData.email && (
+                <span className="success-icon" title="Valid">
+                  <FiCheckCircle />
+                </span>
+              )}
+            </div>
+            {touched.email && validationErrors.email && (
+              <span className="error-message">{validationErrors.email}</span>
+            )}
           </div>
           
           <div className="form-group">
             <label htmlFor="phone">Phone Number</label>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              value={profileData.phone}
-              onChange={handleInputChange}
-              placeholder="09XXXXXXXXX"
-              maxLength="11"
-              pattern="09[0-9]{9}"
-            />
+            <div className="input-wrapper">
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={profileData.phone}
+                onChange={handleInputChange}
+                onBlur={handleBlur}
+                placeholder="09XXXXXXXXX"
+                maxLength="11"
+                pattern="09[0-9]{9}"
+                className={
+                  touched.phone && validationErrors.phone
+                    ? 'input-error'
+                    : touched.phone && !validationErrors.phone && profileData.phone
+                    ? 'input-success'
+                    : ''
+                }
+              />
+              {touched.phone && validationErrors.phone && (
+                <span className="error-icon" title={validationErrors.phone}>
+                  <FiAlertCircle />
+                </span>
+              )}
+              {touched.phone && !validationErrors.phone && profileData.phone && (
+                <span className="success-icon" title="Valid">
+                  <FiCheckCircle />
+                </span>
+              )}
+            </div>
+            {touched.phone && validationErrors.phone && (
+              <span className="error-message">{validationErrors.phone}</span>
+            )}
           </div>
           
           <div className="form-group">
@@ -329,8 +587,12 @@ const Profile = ({ onNavigate }) => {
 
       {/* Action Buttons */}
       <section className="profile-actions">
-        <button className="save-button" onClick={handleSaveProfile}>
-          Save Profile
+        <button 
+          className={`save-button ${success ? 'success' : ''} ${saving ? 'saving' : ''}`}
+          onClick={handleSaveProfile}
+          disabled={saving || loading}
+        >
+          {saving ? 'Saving...' : success ? 'Saved!' : 'Save Profile'}
         </button>
         <button className="signout-button" onClick={handleSignOut}>
           <span>Sign Out</span>

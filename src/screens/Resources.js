@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiMenu, FiSearch, FiChevronUp, FiChevronDown, FiInfo, FiExternalLink, FiPhone, FiCheck, FiFileText, FiBriefcase, FiArrowRight, FiX } from 'react-icons/fi';
 import './Resources.css';
 import Sidebar from '../components/Sidebar';
+import { resourcesAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { ResourceCardSkeleton, SkeletonList } from '../components/SkeletonLoader';
 
 const Resources = ({ onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,8 +16,13 @@ const Resources = ({ onNavigate }) => {
     organization: [],
     category: []
   });
+  const [resources, setResources] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const toast = useToast();
 
-  const resources = [
+  // Fallback data in case API fails
+  const fallbackResources = [
     {
       id: 1,
       title: 'PWD Employment Rights Guide',
@@ -209,6 +217,34 @@ const Resources = ({ onNavigate }) => {
     }
   ];
 
+  // Fetch resources from API on mount
+  useEffect(() => {
+    const fetchResources = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await resourcesAPI.getAll();
+        if (response.success && response.data?.resources && response.data.resources.length > 0) {
+          setResources(response.data.resources);
+        } else {
+          // Use fallback data if API returns no data
+          setResources(fallbackResources);
+        }
+      } catch (err) {
+        console.error('Error fetching resources:', err);
+        setError(err.message);
+        // Use fallback data on error
+        setResources(fallbackResources);
+        toast.error('Failed to load resources. Showing cached data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResources();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const tabs = [
     { id: 'all', label: 'All Resources' },
     { id: 'training', label: 'Training' },
@@ -397,36 +433,40 @@ const Resources = ({ onNavigate }) => {
 
       {/* Resource Listings */}
       <div className="resources-list">
-        {filteredResources.map(resource => (
-          <div key={resource.id} className="resource-card">
-            <div className="resource-header">
-              <h3 className="resource-title">{resource.title}</h3>
-              <div className="resource-meta">
-                <span className="resource-organization">{resource.organization}</span>
-                <span className={`resource-category ${resource.type}`}>{resource.category}</span>
+        {loading ? (
+          <SkeletonList count={3} SkeletonComponent={ResourceCardSkeleton} />
+        ) : (
+          filteredResources.map(resource => (
+            <div key={resource.id} className="resource-card">
+              <div className="resource-header">
+                <h3 className="resource-title">{resource.title}</h3>
+                <div className="resource-meta">
+                  <span className="resource-organization">{resource.organization}</span>
+                  <span className={`resource-category ${resource.type}`}>{resource.category}</span>
+                </div>
+              </div>
+              
+              <p className="resource-description">{resource.description}</p>
+              
+              <div className="resource-actions">
+                <button 
+                  className="more-info-button"
+                  onClick={() => handleMoreInfo(resource.id)}
+                >
+                  <FiInfo size={16} />
+                  <span>More Info</span>
+                </button>
+                <button 
+                  className="visit-button"
+                  onClick={() => handleVisit(resource.id)}
+                >
+                  <span>Visit</span>
+                  <FiExternalLink size={16} />
+                </button>
               </div>
             </div>
-            
-            <p className="resource-description">{resource.description}</p>
-            
-            <div className="resource-actions">
-              <button 
-                className="more-info-button"
-                onClick={() => handleMoreInfo(resource.id)}
-              >
-                <FiInfo size={16} />
-                <span>More Info</span>
-              </button>
-              <button 
-                className="visit-button"
-                onClick={() => handleVisit(resource.id)}
-              >
-                <span>Visit</span>
-                <FiExternalLink size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {filteredResources.length === 0 && (
