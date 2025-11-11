@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiMenu, FiArrowRight, FiCheckCircle, FiAlertCircle, FiCamera } from 'react-icons/fi';
+import { FiMenu, FiArrowRight, FiCheckCircle, FiAlertCircle, FiCamera, FiInfo } from 'react-icons/fi';
 import './Profile.css';
 import Sidebar from '../components/Sidebar';
 import { userAPI } from '../services/api';
@@ -109,22 +109,28 @@ const Profile = ({ onNavigate }) => {
     switch (name) {
       case 'fullName':
         if (!value.trim()) {
-          errors.fullName = 'Full name is required';
+          errors.fullName = 'Full name is required. Please enter your first and last name.';
         } else if (value.trim().split(/\s+/).length < 2) {
-          errors.fullName = 'Please enter both first and last name';
+          errors.fullName = 'Please enter both your first and last name (e.g., "Juan Dela Cruz").';
+        } else if (value.trim().length < 3) {
+          errors.fullName = 'Name is too short. Please enter your complete name.';
         }
         break;
       case 'email':
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!value.trim()) {
-          errors.email = 'Email is required';
+          errors.email = 'Email is required. We need this to contact you about job opportunities.';
         } else if (!emailRegex.test(value)) {
-          errors.email = 'Please enter a valid email address';
+          errors.email = 'Please enter a valid email address (e.g., "juan@example.com"). Make sure it includes @ and a domain.';
+        } else if (value.includes(' ')) {
+          errors.email = 'Email cannot contain spaces. Please remove any spaces.';
         }
         break;
       case 'phone':
         if (value && !/^09\d{9}$/.test(value)) {
-          errors.phone = 'Please enter a valid Philippine phone number (09XXXXXXXXX)';
+          errors.phone = 'Please enter a valid Philippine phone number starting with 09 followed by 9 more digits (e.g., 09123456789).';
+        } else if (value && value.length < 11) {
+          errors.phone = 'Phone number must be 11 digits. Please enter all digits.';
         }
         break;
       default:
@@ -213,21 +219,29 @@ const Profile = ({ onNavigate }) => {
     // Validate all fields
     const errors = {};
     if (!profileData.fullName.trim()) {
-      errors.fullName = 'Full name is required';
-    }
-    if (!profileData.email.trim()) {
-      errors.email = 'Email is required';
+      errors.fullName = 'Full name is required. Please enter your first and last name.';
+    } else if (profileData.fullName.trim().split(/\s+/).length < 2) {
+      errors.fullName = 'Please enter both your first and last name (e.g., "Juan Dela Cruz").';
     }
     
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (profileData.email && !emailRegex.test(profileData.email)) {
-      errors.email = 'Please enter a valid email address';
+    if (!profileData.email.trim()) {
+      errors.email = 'Email is required. We need this to contact you about job opportunities.';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(profileData.email)) {
+        errors.email = 'Please enter a valid email address (e.g., "juan@example.com"). Make sure it includes @ and a domain.';
+      } else if (profileData.email.includes(' ')) {
+        errors.email = 'Email cannot contain spaces. Please remove any spaces.';
+      }
     }
     
     // Validate phone if provided
     if (profileData.phone && !/^09\d{9}$/.test(profileData.phone)) {
-      errors.phone = 'Please enter a valid Philippine phone number (09XXXXXXXXX)';
+      if (profileData.phone.length < 11) {
+        errors.phone = 'Phone number must be 11 digits. Please enter all digits (e.g., 09123456789).';
+      } else {
+        errors.phone = 'Please enter a valid Philippine phone number starting with 09 followed by 9 more digits (e.g., 09123456789).';
+      }
     }
     
     setValidationErrors(errors);
@@ -238,7 +252,12 @@ const Profile = ({ onNavigate }) => {
     });
     
     if (Object.keys(errors).length > 0) {
-      toast.error('Please fix the validation errors before saving');
+      const errorCount = Object.keys(errors).length;
+      const fieldNames = Object.keys(errors).map(key => {
+        const fieldMap = { fullName: 'Full Name', email: 'Email', phone: 'Phone Number' };
+        return fieldMap[key] || key;
+      }).join(', ');
+      toast.error(`Please fix ${errorCount} error${errorCount > 1 ? 's' : ''} in: ${fieldNames}`);
       return;
     }
     
@@ -290,14 +309,23 @@ const Profile = ({ onNavigate }) => {
         // Rollback on error
         setProfileData(previousProfileData);
         setSuccess(false);
-        toast.error(response.message || 'Failed to save profile');
+        const errorMsg = response.message || 'Failed to save profile';
+        toast.error(`${errorMsg}. Please check your connection and try again. If the problem persists, contact support.`);
       }
     } catch (err) {
       // Rollback on error
       setProfileData(previousProfileData);
       setSuccess(false);
       console.error('Error saving profile:', err);
-      toast.error(err.message || 'Failed to save profile. Please try again.');
+      let errorMessage = 'Failed to save profile. ';
+      if (err.message?.includes('network') || err.message?.includes('fetch')) {
+        errorMessage += 'Please check your internet connection and try again.';
+      } else if (err.message?.includes('timeout')) {
+        errorMessage += 'The request took too long. Please try again.';
+      } else {
+        errorMessage += 'Please try again. If the problem persists, contact support.';
+      }
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -326,13 +354,14 @@ const Profile = ({ onNavigate }) => {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+      toast.error('Please select an image file (JPG, PNG, or GIF). The file you selected is not an image.');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB');
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      toast.error(`Image size is ${fileSizeMB}MB. Please select an image smaller than 5MB. You can compress the image or choose a different file.`);
       return;
     }
 
@@ -384,7 +413,17 @@ const Profile = ({ onNavigate }) => {
       }
     } catch (err) {
       console.error('Error uploading avatar:', err);
-      toast.error(err.message || 'Failed to upload profile picture. Please try again.');
+      let errorMessage = 'Failed to upload profile picture. ';
+      if (err.message?.includes('Bucket not found') || err.message?.includes('storage not configured')) {
+        errorMessage += 'Avatar storage is not available. Please contact support.';
+      } else if (err.message?.includes('network') || err.message?.includes('fetch')) {
+        errorMessage += 'Please check your internet connection and try again.';
+      } else if (err.message?.includes('Not authenticated')) {
+        errorMessage += 'Your session has expired. Please sign in again.';
+      } else {
+        errorMessage += 'Please try again with a different image. Make sure the file is a valid image (JPG, PNG, or GIF) under 5MB.';
+      }
+      toast.error(errorMessage);
     } finally {
       setUploadingAvatar(false);
       // Reset file input
@@ -447,6 +486,7 @@ const Profile = ({ onNavigate }) => {
         <div className="form-grid">
           <div className="form-group">
             <label htmlFor="fullName">{getText('Full Name')}</label>
+            <span className="help-text">Enter your first and last name as it appears on official documents</span>
             <div className="input-wrapper">
               <input
                 type="text"
@@ -455,7 +495,7 @@ const Profile = ({ onNavigate }) => {
                 value={profileData.fullName}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                placeholder={getText('Enter your full name')}
+                placeholder="e.g., Juan Dela Cruz"
                 className={
                   touched.fullName && validationErrors.fullName
                     ? 'input-error'
@@ -482,6 +522,7 @@ const Profile = ({ onNavigate }) => {
           
           <div className="form-group">
             <label htmlFor="email">{getText('Email Address')}</label>
+            <span className="help-text">We'll use this to send you job opportunities and important updates</span>
             <div className="input-wrapper">
               <input
                 type="email"
@@ -490,7 +531,7 @@ const Profile = ({ onNavigate }) => {
                 value={profileData.email}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                placeholder={getText('Enter your email')}
+                placeholder="e.g., juan.delacruz@email.com"
                 className={
                   touched.email && validationErrors.email
                     ? 'input-error'
@@ -517,6 +558,7 @@ const Profile = ({ onNavigate }) => {
           
           <div className="form-group">
             <label htmlFor="phone">{getText('Phone Number')}</label>
+            <span className="help-text">Optional. Enter your 11-digit Philippine mobile number starting with 09</span>
             <div className="input-wrapper">
               <input
                 type="tel"
@@ -525,7 +567,7 @@ const Profile = ({ onNavigate }) => {
                 value={profileData.phone}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                placeholder="09XXXXXXXXX"
+                placeholder="e.g., 09123456789"
                 maxLength="11"
                 pattern="09[0-9]{9}"
                 className={
@@ -554,30 +596,33 @@ const Profile = ({ onNavigate }) => {
           
           <div className="form-group">
             <label htmlFor="city">{getText('Location (City)')}</label>
+            <span className="help-text">Optional. Your city helps us find local job opportunities</span>
             <input
               type="text"
               id="city"
               name="city"
               value={profileData.city}
               onChange={handleInputChange}
-              placeholder={getText('Enter your city')}
+              placeholder="e.g., Manila, Quezon City, Cebu"
             />
           </div>
           
           <div className="form-group">
             <label htmlFor="province">{getText('Province')}</label>
+            <span className="help-text">Optional. Your province helps us match you with regional opportunities</span>
             <input
               type="text"
               id="province"
               name="province"
               value={profileData.province}
               onChange={handleInputChange}
-              placeholder={getText('Enter your province')}
+              placeholder="e.g., Metro Manila, Cebu, Laguna"
             />
           </div>
           
           <div className="form-group">
             <label htmlFor="identity">{getText('I identify as:')}</label>
+            <span className="help-text">Optional. This helps us connect you with relevant programs and opportunities</span>
             <select
               id="identity"
               name="identity"
@@ -600,12 +645,13 @@ const Profile = ({ onNavigate }) => {
         <h3>{getText('Skills & Experience')}</h3>
         <div className="form-group">
           <label htmlFor="skills">{getText('List your skills and previous work experience')}</label>
+          <span className="help-text">Include your relevant skills, work history, education, and certifications. This helps employers find you.</span>
           <textarea
             id="skills"
             name="skills"
             value={profileData.skills}
             onChange={handleInputChange}
-            placeholder={getText('Describe your skills, work experience, and qualifications...')}
+            placeholder="e.g., Customer service (3 years), Microsoft Office, Basic computer skills, High school graduate..."
             rows="4"
           />
         </div>
@@ -614,6 +660,7 @@ const Profile = ({ onNavigate }) => {
       {/* Job Preferences */}
       <section className="profile-section">
         <h3>{getText('Job Preferences')}</h3>
+        <p className="section-help-text">Select all that apply. We'll match you with jobs that fit your preferences.</p>
         <div className="checkbox-group">
           <label className="checkbox-label">
             <input
@@ -623,7 +670,7 @@ const Profile = ({ onNavigate }) => {
               onChange={handleInputChange}
             />
             <span className="checkmark"></span>
-            Full-time employment
+            <span className="checkbox-text">Full-time employment</span>
           </label>
           
           <label className="checkbox-label">
@@ -634,7 +681,7 @@ const Profile = ({ onNavigate }) => {
               onChange={handleInputChange}
             />
             <span className="checkmark"></span>
-            Part-time employment
+            <span className="checkbox-text">Part-time employment</span>
           </label>
           
           <label className="checkbox-label">
@@ -645,7 +692,7 @@ const Profile = ({ onNavigate }) => {
               onChange={handleInputChange}
             />
             <span className="checkmark"></span>
-            Remote / Work from home
+            <span className="checkbox-text">Remote / Work from home</span>
           </label>
           
           <label className="checkbox-label">
@@ -656,7 +703,7 @@ const Profile = ({ onNavigate }) => {
               onChange={handleInputChange}
             />
             <span className="checkmark"></span>
-            Flexible hours
+            <span className="checkbox-text">Flexible hours</span>
           </label>
         </div>
       </section>
@@ -664,6 +711,7 @@ const Profile = ({ onNavigate }) => {
       {/* Accessibility Settings */}
       <section className="profile-section">
         <h3>{getText('Accessibility Settings')}</h3>
+        <p className="section-help-text">Customize the interface to make it easier to use. Changes apply immediately.</p>
         <div className="checkbox-group">
           <label className="checkbox-label">
             <input
@@ -673,7 +721,11 @@ const Profile = ({ onNavigate }) => {
               onChange={handleInputChange}
             />
             <span className="checkmark"></span>
-            I use a screen reader
+            <span className="checkbox-text">I use a screen reader</span>
+            <div className="tooltip-wrapper">
+              <FiInfo className="tooltip-icon" aria-label="Screen reader information" role="button" tabIndex={0} />
+              <span className="tooltip-text" role="tooltip" aria-live="polite">Optimizes the interface for screen reader software like NVDA, JAWS, or VoiceOver. Improves navigation and announces important information.</span>
+            </div>
           </label>
           
           <label className="checkbox-label">
@@ -684,7 +736,11 @@ const Profile = ({ onNavigate }) => {
               onChange={handleInputChange}
             />
             <span className="checkmark"></span>
-            Enable high contrast mode
+            <span className="checkbox-text">Enable high contrast mode</span>
+            <div className="tooltip-wrapper">
+              <FiInfo className="tooltip-icon" aria-label="High contrast mode information" role="button" tabIndex={0} />
+              <span className="tooltip-text" role="tooltip" aria-live="polite">Increases contrast between text and backgrounds for better visibility. Uses black backgrounds with white text and stronger borders.</span>
+            </div>
           </label>
           
           <label className="checkbox-label">
@@ -695,7 +751,11 @@ const Profile = ({ onNavigate }) => {
               onChange={handleInputChange}
             />
             <span className="checkmark"></span>
-            Use larger text size
+            <span className="checkbox-text">Use larger text size</span>
+            <div className="tooltip-wrapper">
+              <FiInfo className="tooltip-icon" aria-label="Large text mode information" role="button" tabIndex={0} />
+              <span className="tooltip-text" role="tooltip" aria-live="polite">Increases font sizes throughout the interface by approximately 20% for easier reading. Helpful for users with visual impairments.</span>
+            </div>
           </label>
         </div>
       </section>
@@ -703,6 +763,7 @@ const Profile = ({ onNavigate }) => {
       {/* Notification Preferences */}
       <section className="profile-section">
         <h3>{getText('Notification Preferences')}</h3>
+        <p className="section-help-text">Choose how you want to receive updates about job opportunities and important information.</p>
         <div className="checkbox-group">
           <label className="checkbox-label">
             <input
@@ -712,7 +773,11 @@ const Profile = ({ onNavigate }) => {
               onChange={handleInputChange}
             />
             <span className="checkmark"></span>
-            Email notifications
+            <span className="checkbox-text">Email notifications</span>
+            <div className="tooltip-wrapper">
+              <FiInfo className="tooltip-icon" aria-label="Email notifications information" role="button" tabIndex={0} />
+              <span className="tooltip-text" role="tooltip" aria-live="polite">Receive job alerts, application updates, and important messages via email.</span>
+            </div>
           </label>
           
           <label className="checkbox-label">
@@ -723,7 +788,11 @@ const Profile = ({ onNavigate }) => {
               onChange={handleInputChange}
             />
             <span className="checkmark"></span>
-            SMS notifications
+            <span className="checkbox-text">SMS notifications</span>
+            <div className="tooltip-wrapper">
+              <FiInfo className="tooltip-icon" aria-label="SMS notifications information" role="button" tabIndex={0} />
+              <span className="tooltip-text" role="tooltip" aria-live="polite">Get urgent updates and reminders via text message. Requires a valid phone number.</span>
+            </div>
           </label>
           
           <label className="checkbox-label">
@@ -734,7 +803,11 @@ const Profile = ({ onNavigate }) => {
               onChange={handleInputChange}
             />
             <span className="checkmark"></span>
-            In-app notifications
+            <span className="checkbox-text">In-app notifications</span>
+            <div className="tooltip-wrapper">
+              <FiInfo className="tooltip-icon" aria-label="In-app notifications information" role="button" tabIndex={0} />
+              <span className="tooltip-text" role="tooltip" aria-live="polite">See notifications when you're using the app. These appear as badges and alerts within the interface.</span>
+            </div>
           </label>
         </div>
       </section>
