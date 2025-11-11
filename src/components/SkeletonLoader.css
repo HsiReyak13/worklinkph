@@ -94,10 +94,19 @@
 /* Job skeleton specific styles */
 .job-skeleton {
   min-height: 200px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
 .job-skeleton .skeleton-header {
   margin-bottom: 12px;
+}
+
+.job-skeleton .skeleton-line {
+  margin-bottom: 10px;
+}
+
+.job-skeleton .skeleton-line:last-of-type {
+  margin-bottom: 0;
 }
 
 /* Resource skeleton specific styles */

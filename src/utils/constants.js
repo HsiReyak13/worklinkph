@@ -1,7 +1,7 @@
 // Application constants to replace magic numbers
 
 export const TIMEOUTS = {
-  SPLASH_SCREEN: 1000,
+  SPLASH_SCREEN: 2500,
   API_TIMEOUT: 1000,
   FORGOT_PASSWORD_SUCCESS_DELAY: 2000,
   MODAL_CLOSE_DELAY: 2000,

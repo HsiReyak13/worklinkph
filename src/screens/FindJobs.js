@@ -21,6 +21,7 @@ const FindJobs = ({ onNavigate }) => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filtering, setFiltering] = useState(false);
   const toast = useToast();
   const { updateBreadcrumbs } = useNavigation();
 
@@ -112,20 +113,29 @@ const FindJobs = ({ onNavigate }) => {
   };
 
   const handleFilterToggle = (filter) => {
-    setSelectedFilters(prev => 
-      prev.includes(filter) 
+    // Optimistic UI update - update immediately
+    setFiltering(true);
+    setSelectedFilters(prev => {
+      const newFilters = prev.includes(filter) 
         ? prev.filter(f => f !== filter)
-        : [...prev, filter]
-    );
+        : [...prev, filter];
+      // Small delay to show visual feedback
+      setTimeout(() => setFiltering(false), 100);
+      return newFilters;
+    });
   };
 
   const handleFilterOptionToggle = (filterCategory, option) => {
+    // Optimistic UI update - update immediately
+    setFiltering(true);
     setFilterOptions(prev => ({
       ...prev,
       [filterCategory]: prev[filterCategory].includes(option)
         ? prev[filterCategory].filter(f => f !== option)
         : [...prev[filterCategory], option]
     }));
+    // Small delay to show visual feedback
+    setTimeout(() => setFiltering(false), 100);
   };
 
   const toggleFilterPanel = () => {
@@ -306,9 +316,9 @@ const FindJobs = ({ onNavigate }) => {
       </div>
 
       {/* Job Listings */}
-      <div className="jobs-list">
+      <div className={`jobs-list ${filtering ? 'filtering' : ''}`}>
         {loading ? (
-          <SkeletonList count={3} SkeletonComponent={JobCardSkeleton} />
+          <SkeletonList count={5} SkeletonComponent={JobCardSkeleton} />
         ) : (
           filteredJobs.map(job => (
             <div key={job.id} className="job-card">

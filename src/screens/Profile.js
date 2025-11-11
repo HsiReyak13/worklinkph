@@ -4,6 +4,7 @@ import './Profile.css';
 import Sidebar from '../components/Sidebar';
 import { userAPI } from '../services/api';
 import { useToast } from '../components/Toast';
+import ProgressiveImage from '../components/ProgressiveImage';
 
 const Profile = ({ onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -22,6 +23,7 @@ const Profile = ({ onNavigate }) => {
     province: '',
     identity: '',
     skills: '',
+    avatarUrl: null,
     jobPreferences: {
       fullTime: false,
       partTime: false,
@@ -60,6 +62,7 @@ const Profile = ({ onNavigate }) => {
             province: user.province || '',
             identity: user.identity || '',
             skills: user.skills || '',
+            avatarUrl: user.avatar_url || user.avatarUrl || null,
             jobPreferences: user.jobPreferences || user.job_preferences || prev.jobPreferences,
             accessibility: user.accessibility || user.accessibility_settings || prev.accessibility,
             notifications: user.notifications || user.notification_preferences || prev.notifications
@@ -212,8 +215,11 @@ const Profile = ({ onNavigate }) => {
       return;
     }
     
+    // Optimistic UI update - show success immediately
+    const previousProfileData = { ...profileData };
+    setSuccess(true);
     setSaving(true);
-    setSuccess(false);
+    toast.success('Saving profile...');
     
     try {
       // Split full name into first and last name
@@ -238,14 +244,27 @@ const Profile = ({ onNavigate }) => {
       const response = await userAPI.updateProfile(updateData);
       
       if (response.success) {
-        setSuccess(true);
+        // Update with server response if it includes additional data
+        if (response.data?.user) {
+          const user = response.data.user;
+          setProfileData(prev => ({
+            ...prev,
+            avatarUrl: user.avatar_url || user.avatarUrl || prev.avatarUrl
+          }));
+        }
         toast.success('Profile saved successfully!');
         // Clear success state after 3 seconds
         setTimeout(() => setSuccess(false), 3000);
       } else {
+        // Rollback on error
+        setProfileData(previousProfileData);
+        setSuccess(false);
         toast.error(response.message || 'Failed to save profile');
       }
     } catch (err) {
+      // Rollback on error
+      setProfileData(previousProfileData);
+      setSuccess(false);
       console.error('Error saving profile:', err);
       toast.error(err.message || 'Failed to save profile. Please try again.');
     } finally {
@@ -279,9 +298,13 @@ const Profile = ({ onNavigate }) => {
       {/* Profile Header Section */}
       <section className="profile-hero">
         <div className="profile-hero-content">
-          <div className="profile-avatar">
-            <FiUser size={64} />
-          </div>
+          <ProgressiveImage
+            src={profileData.avatarUrl}
+            alt="Profile avatar"
+            className="avatar"
+            fallback={<FiUser size={64} />}
+            style={{ width: '80px', height: '80px' }}
+          />
           <h2>My Profile</h2>
           <p>Customize your experience</p>
         </div>

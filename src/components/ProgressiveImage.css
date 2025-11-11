@@ -1,0 +1,83 @@
+.progressive-image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progressive-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.progressive-image.loading {
+  opacity: 0.3;
+  filter: blur(5px);
+}
+
+.progressive-image.loaded {
+  opacity: 1;
+  filter: blur(0);
+}
+
+.progressive-image-skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.progressive-image-container.loaded .progressive-image-skeleton {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.progressive-image-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  color: #9ca3af;
+}
+
+/* Avatar specific styles */
+.progressive-image-container.avatar {
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  min-height: 80px;
+}
+
+.progressive-image-container.avatar .progressive-image {
+  border-radius: 50%;
+}
+
+/* Card image styles */
+.progressive-image-container.card-image {
+  border-radius: 8px;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+}
+

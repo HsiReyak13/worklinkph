@@ -1,12 +1,13 @@
 import React, { useEffect } from 'react';
 import './SplashScreen.css';
+import { TIMEOUTS } from '../utils/constants';
 
 const SplashScreen = ({ onNavigate }) => {
   useEffect(() => {
-    // Auto navigate to login after 1 second
+    // Auto navigate to login after 2-3 seconds
     const timer = setTimeout(() => {
       onNavigate('login');
-    }, 1000);
+    }, TIMEOUTS.SPLASH_SCREEN);
 
     return () => clearTimeout(timer);
   }, [onNavigate]);
