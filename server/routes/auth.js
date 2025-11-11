@@ -53,7 +53,6 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
   try {
     const { firstName, lastName, email, phone, password, city, province, identity, skills, jobPreferences, accessibility, notifications } = req.body;
     
-    // Create auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -86,13 +85,10 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
       });
     }
 
-    // CRITICAL: Verify the auth user exists in auth.users table
-    // This ensures the foreign key constraint will be satisfied
-    // Try up to 3 times with delays in case of timing issues
     let verifiedAuthUser = null;
     let verifyError = null;
     const maxRetries = 3;
-    const retryDelay = 500; // milliseconds
+    const retryDelay = 500;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       const { data: { user: verifiedUser }, error: error } = await supabase.auth.admin.getUserById(authData.user.id);
@@ -104,7 +100,6 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
       } else {
         verifyError = error;
         if (attempt < maxRetries) {
-          // Wait before retrying (in case Supabase is still creating the user)
           await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
         }
       }
@@ -118,7 +113,6 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
         attempts: maxRetries
       });
       
-      // Clean up: try to delete the auth user if it was created
       if (authData.user.id) {
         try {
           await supabase.auth.admin.deleteUser(authData.user.id);
@@ -133,12 +127,11 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
       });
     }
 
-    // Use the verified auth user ID (guaranteed to exist in auth.users)
     const verifiedAuthUserId = verifiedAuthUser.id;
 
     try {
       const user = await User.create({
-        authUserId: verifiedAuthUserId, // Use verified ID
+        authUserId: verifiedAuthUserId,
         firstName,
         lastName,
         email,
@@ -173,7 +166,6 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
         email: email
       });
       
-      // Clean up: delete the auth user if profile creation fails
       try {
         await supabase.auth.admin.deleteUser(verifiedAuthUserId);
       } catch (deleteError) {
@@ -355,13 +347,10 @@ router.post('/google/callback', async (req, res, next) => {
       });
     }
 
-    // CRITICAL: Verify the auth user exists in auth.users table
-    // This ensures the foreign key constraint will be satisfied
-    // Try up to 3 times with delays in case of timing issues
     let verifiedAuthUser = null;
     let verifyError = null;
     const maxRetries = 3;
-    const retryDelay = 500; // milliseconds
+    const retryDelay = 500;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       const { data: { user: verifiedUser }, error: error } = await supabase.auth.admin.getUserById(authUser.id);
@@ -373,7 +362,6 @@ router.post('/google/callback', async (req, res, next) => {
       } else {
         verifyError = error;
         if (attempt < maxRetries) {
-          // Wait before retrying (in case Supabase is still creating the user)
           await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
         }
       }
@@ -393,10 +381,8 @@ router.post('/google/callback', async (req, res, next) => {
       });
     }
 
-    // Use the verified auth user ID (guaranteed to exist in auth.users)
     const verifiedAuthUserId = verifiedAuthUser.id;
 
-    // Check if profile already exists
     let user = await User.findByAuthUserId(verifiedAuthUserId);
     
     if (!user) {
@@ -421,9 +407,8 @@ router.post('/google/callback', async (req, res, next) => {
       };
       
       try {
-        // Use verified auth user ID to ensure foreign key constraint is satisfied
         user = await User.create({
-          authUserId: verifiedAuthUserId, // Use verified ID that we know exists
+          authUserId: verifiedAuthUserId,
           authProvider: 'google',
           firstName,
           lastName,
@@ -451,10 +436,8 @@ router.post('/google/callback', async (req, res, next) => {
           email: email
         });
         
-        // If creation fails, try to find existing user by email (might have been created by another process)
         user = await User.findByEmail(email);
         if (!user) {
-          // Re-throw with more context
           throw new Error(`Failed to create user profile: ${createError.message}. Auth user exists but profile creation failed.`);
         } else {
           console.log('Found existing user profile by email:', user.id);
