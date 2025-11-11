@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiMenu, FiSearch, FiChevronUp, FiChevronDown, FiMapPin, FiExternalLink } from 'react-icons/fi';
+import { FiMenu, FiSearch, FiChevronUp, FiChevronDown, FiMapPin, FiExternalLink, FiInbox } from 'react-icons/fi';
 import './FindJobs.css';
 import Sidebar from '../components/Sidebar';
 import { jobsAPI } from '../services/api';
@@ -316,11 +316,20 @@ const FindJobs = ({ onNavigate }) => {
       </div>
 
       {/* Job Listings */}
-      <div className={`jobs-list ${filtering ? 'filtering' : ''}`}>
-        {loading ? (
+      {loading ? (
+        <div className={`jobs-list ${filtering ? 'filtering' : ''}`}>
           <SkeletonList count={5} SkeletonComponent={JobCardSkeleton} />
-        ) : (
-          filteredJobs.map(job => (
+        </div>
+      ) : filteredJobs.length === 0 ? (
+        <div className="empty-state">
+          <FiInbox size={80} className="empty-icon" />
+          <h3>No jobs found</h3>
+          <p>Try adjusting your filters or search terms</p>
+          <button onClick={clearAllFilters}>Clear Filters</button>
+        </div>
+      ) : (
+        <div className={`jobs-list ${filtering ? 'filtering' : ''}`}>
+          {filteredJobs.map(job => (
             <div key={job.id} className="job-card">
               <div className="job-header">
                 <h3 className="job-title">{job.title}</h3>
@@ -353,16 +362,7 @@ const FindJobs = ({ onNavigate }) => {
                 <FiExternalLink size={16} />
               </button>
             </div>
-          ))
-        )}
-      </div>
-
-      {!loading && filteredJobs.length === 0 && (
-        <div className="no-jobs">
-          <p>No jobs found matching your criteria.</p>
-          <button onClick={clearAllFilters}>
-            Clear Filters
-          </button>
+          ))}
         </div>
       )}
 
