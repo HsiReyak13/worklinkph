@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { FiCheck, FiArrowRight, FiArrowLeft } from 'react-icons/fi';
+import { FiArrowRight, FiArrowLeft } from 'react-icons/fi';
 import './OnboardingScreen.css';
 import { userAPI } from '../services/api';
 import { logger } from '../utils/logger';
@@ -8,8 +8,90 @@ import { logger } from '../utils/logger';
 const OnboardingScreen = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [savingProgress, setSavingProgress] = useState(false);
+  const [onboardingData, setOnboardingData] = useState({
+    step1: {
+      interests: [],
+      goals: ''
+    },
+    step2: {
+      jobTypes: [],
+      workLocation: '',
+      availability: ''
+    },
+    step3: {
+      resourcesNeeded: [],
+      supportServices: []
+    },
+    step4: {
+      skills: '',
+      experience: '',
+      accessibilityNeeds: []
+    }
+  });
 
   const totalSteps = 4;
+
+  // Load saved progress on mount
+  useEffect(() => {
+    const loadProgress = async () => {
+      try {
+        const response = await userAPI.getProfile();
+        if (response.success && response.data?.user) {
+          const user = response.data.user;
+          const savedProgress = user.onboarding_progress || user.onboardingProgress || {};
+          if (Object.keys(savedProgress).length > 0) {
+            setOnboardingData(prev => ({ ...prev, ...savedProgress }));
+            // Restore step if user was in the middle
+            if (savedProgress.currentStep && savedProgress.currentStep <= totalSteps) {
+              setCurrentStep(savedProgress.currentStep);
+            }
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to load onboarding progress', err);
+      }
+    };
+    loadProgress();
+  }, []);
+
+  // Save progress whenever data changes
+  useEffect(() => {
+    let isMounted = true;
+    
+    const saveProgress = async () => {
+      if (savingProgress) return; // Prevent infinite loop
+      
+      setSavingProgress(true);
+      try {
+        await userAPI.saveOnboardingProgress({
+          ...onboardingData,
+          currentStep
+        });
+      } catch (err) {
+        if (isMounted) {
+          logger.error('Failed to save onboarding progress', err);
+        }
+      } finally {
+        if (isMounted) {
+          setSavingProgress(false);
+        }
+      }
+    };
+
+    // Debounce saves - only save after user stops typing for 1 second
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        saveProgress();
+      }
+    }, 1000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onboardingData, currentStep]);
 
   const onboardingSteps = [
     {
@@ -26,6 +108,46 @@ const OnboardingScreen = ({ onComplete }) => {
           </div>
           <h3>We're excited to have you on board!</h3>
           <p>WorkLink PH connects Filipinos to inclusive employment opportunities, especially for Persons with Disabilities, Senior Citizens, Youth, and Marginalized groups.</p>
+          
+          <div className="onboarding-form">
+            <div className="form-group">
+              <label>What are you interested in? (Select all that apply)</label>
+              <div className="checkbox-group">
+                {['Full-time jobs', 'Part-time jobs', 'Remote work', 'Training programs', 'Career guidance'].map(interest => (
+                  <label key={interest} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={onboardingData.step1.interests.includes(interest)}
+                      onChange={(e) => {
+                        const interests = e.target.checked
+                          ? [...onboardingData.step1.interests, interest]
+                          : onboardingData.step1.interests.filter(i => i !== interest);
+                        setOnboardingData(prev => ({
+                          ...prev,
+                          step1: { ...prev.step1, interests }
+                        }));
+                      }}
+                    />
+                    <span className="checkmark"></span>
+                    {interest}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="form-group">
+              <label htmlFor="goals">What are your career goals?</label>
+              <textarea
+                id="goals"
+                value={onboardingData.step1.goals}
+                onChange={(e) => setOnboardingData(prev => ({
+                  ...prev,
+                  step1: { ...prev.step1, goals: e.target.value }
+                }))}
+                placeholder="Tell us about your career aspirations..."
+                rows="3"
+              />
+            </div>
+          </div>
         </div>
       )
     },
@@ -42,11 +164,69 @@ const OnboardingScreen = ({ onComplete }) => {
           </div>
           <h3>Search & Apply</h3>
           <p>Browse through a wide variety of job listings filtered by your preferences. Use search and filters to find opportunities that match your profile.</p>
-          <ul className="onboarding-features">
-            <li><FiCheck /> Advanced search and filtering</li>
-            <li><FiCheck /> Jobs from verified employers</li>
-            <li><FiCheck /> Accessibility-focused opportunities</li>
-          </ul>
+          
+          <div className="onboarding-form">
+            <div className="form-group">
+              <label>What types of jobs interest you? (Select all that apply)</label>
+              <div className="checkbox-group">
+                {['Customer Service', 'Administrative', 'Data Entry', 'Sales', 'Technical', 'Creative', 'Healthcare', 'Education'].map(jobType => (
+                  <label key={jobType} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={onboardingData.step2.jobTypes.includes(jobType)}
+                      onChange={(e) => {
+                        const jobTypes = e.target.checked
+                          ? [...onboardingData.step2.jobTypes, jobType]
+                          : onboardingData.step2.jobTypes.filter(t => t !== jobType);
+                        setOnboardingData(prev => ({
+                          ...prev,
+                          step2: { ...prev.step2, jobTypes }
+                        }));
+                      }}
+                    />
+                    <span className="checkmark"></span>
+                    {jobType}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="form-group">
+              <label htmlFor="workLocation">Preferred work location</label>
+              <select
+                id="workLocation"
+                value={onboardingData.step2.workLocation}
+                onChange={(e) => setOnboardingData(prev => ({
+                  ...prev,
+                  step2: { ...prev.step2, workLocation: e.target.value }
+                }))}
+              >
+                <option value="">Select an option</option>
+                <option value="remote">Remote / Work from Home</option>
+                <option value="office">Office-based</option>
+                <option value="hybrid">Hybrid (Remote + Office)</option>
+                <option value="field">Field Work</option>
+                <option value="flexible">Flexible</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="availability">When are you available to start?</label>
+              <select
+                id="availability"
+                value={onboardingData.step2.availability}
+                onChange={(e) => setOnboardingData(prev => ({
+                  ...prev,
+                  step2: { ...prev.step2, availability: e.target.value }
+                }))}
+              >
+                <option value="">Select an option</option>
+                <option value="immediately">Immediately</option>
+                <option value="1week">Within 1 week</option>
+                <option value="2weeks">Within 2 weeks</option>
+                <option value="1month">Within 1 month</option>
+                <option value="flexible">Flexible</option>
+              </select>
+            </div>
+          </div>
         </div>
       )
     },
@@ -63,11 +243,57 @@ const OnboardingScreen = ({ onComplete }) => {
           </div>
           <h3>Resource Directory</h3>
           <p>Find government agencies, NGOs, training programs, and support services designed to help you succeed in your career journey.</p>
-          <ul className="onboarding-features">
-            <li><FiCheck /> Training programs</li>
-            <li><FiCheck /> Government services</li>
-            <li><FiCheck /> Community resources</li>
-          </ul>
+          
+          <div className="onboarding-form">
+            <div className="form-group">
+              <label>What resources do you need? (Select all that apply)</label>
+              <div className="checkbox-group">
+                {['Job training', 'Skills development', 'Career counseling', 'Financial assistance', 'Transportation support', 'Accessibility tools', 'Legal assistance', 'Healthcare services'].map(resource => (
+                  <label key={resource} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={onboardingData.step3.resourcesNeeded.includes(resource)}
+                      onChange={(e) => {
+                        const resourcesNeeded = e.target.checked
+                          ? [...onboardingData.step3.resourcesNeeded, resource]
+                          : onboardingData.step3.resourcesNeeded.filter(r => r !== resource);
+                        setOnboardingData(prev => ({
+                          ...prev,
+                          step3: { ...prev.step3, resourcesNeeded }
+                        }));
+                      }}
+                    />
+                    <span className="checkmark"></span>
+                    {resource}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Support services you're interested in</label>
+              <div className="checkbox-group">
+                {['Mentorship programs', 'Peer support groups', 'Professional networking', 'Workshop events', 'Online courses'].map(service => (
+                  <label key={service} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={onboardingData.step3.supportServices.includes(service)}
+                      onChange={(e) => {
+                        const supportServices = e.target.checked
+                          ? [...onboardingData.step3.supportServices, service]
+                          : onboardingData.step3.supportServices.filter(s => s !== service);
+                        setOnboardingData(prev => ({
+                          ...prev,
+                          step3: { ...prev.step3, supportServices }
+                        }));
+                      }}
+                    />
+                    <span className="checkmark"></span>
+                    {service}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )
     },
@@ -84,26 +310,92 @@ const OnboardingScreen = ({ onComplete }) => {
           </div>
           <h3>Complete Your Profile</h3>
           <p>Fill out your profile to receive personalized job recommendations. The more information you provide, the better matches we can find for you!</p>
-          <ul className="onboarding-features">
-            <li><FiCheck /> Add your skills and experience</li>
-            <li><FiCheck /> Set your job preferences</li>
-            <li><FiCheck /> Specify accessibility needs</li>
-          </ul>
+          
+          <div className="onboarding-form">
+            <div className="form-group">
+              <label htmlFor="skills">What skills do you have?</label>
+              <textarea
+                id="skills"
+                value={onboardingData.step4.skills}
+                onChange={(e) => setOnboardingData(prev => ({
+                  ...prev,
+                  step4: { ...prev.step4, skills: e.target.value }
+                }))}
+                placeholder="List your skills, certifications, or qualifications..."
+                rows="3"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="experience">Work experience</label>
+              <textarea
+                id="experience"
+                value={onboardingData.step4.experience}
+                onChange={(e) => setOnboardingData(prev => ({
+                  ...prev,
+                  step4: { ...prev.step4, experience: e.target.value }
+                }))}
+                placeholder="Describe your previous work experience..."
+                rows="3"
+              />
+            </div>
+            <div className="form-group">
+              <label>Accessibility needs (Select all that apply)</label>
+              <div className="checkbox-group">
+                {['Screen reader support', 'High contrast mode', 'Large text', 'Keyboard navigation', 'Sign language interpreter', 'Wheelchair accessible workspace', 'Flexible schedule', 'Remote work options'].map(need => (
+                  <label key={need} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={onboardingData.step4.accessibilityNeeds.includes(need)}
+                      onChange={(e) => {
+                        const accessibilityNeeds = e.target.checked
+                          ? [...onboardingData.step4.accessibilityNeeds, need]
+                          : onboardingData.step4.accessibilityNeeds.filter(n => n !== need);
+                        setOnboardingData(prev => ({
+                          ...prev,
+                          step4: { ...prev.step4, accessibilityNeeds }
+                        }));
+                      }}
+                    />
+                    <span className="checkmark"></span>
+                    {need}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )
     }
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < totalSteps) {
+      // Save progress before moving to next step
+      try {
+        await userAPI.saveOnboardingProgress({
+          ...onboardingData,
+          currentStep: currentStep + 1
+        });
+      } catch (err) {
+        logger.error('Failed to save progress', err);
+      }
       setCurrentStep(currentStep + 1);
     } else {
       handleComplete();
     }
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
     if (currentStep > 1) {
+      // Save progress before going back
+      try {
+        await userAPI.saveOnboardingProgress({
+          ...onboardingData,
+          currentStep: currentStep - 1
+        });
+      } catch (err) {
+        logger.error('Failed to save progress', err);
+      }
       setCurrentStep(currentStep - 1);
     }
   };
@@ -112,6 +404,12 @@ const OnboardingScreen = ({ onComplete }) => {
     setIsLoading(true);
     
     try {
+      // Save final progress and mark as completed
+      await userAPI.saveOnboardingProgress({
+        ...onboardingData,
+        currentStep: totalSteps,
+        completed: true
+      });
       await userAPI.completeOnboarding();
       logger.info('Onboarding completed successfully');
       

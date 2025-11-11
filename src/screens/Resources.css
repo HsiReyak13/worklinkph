@@ -40,11 +40,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s ease;
+  transition: all 0.2s ease;
+  transform: scale(1);
+  border-radius: 4px;
 }
 
 .menu-button:hover {
   opacity: 0.8;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-button:active {
+  transform: scale(0.95);
+  transition: all 0.1s ease;
 }
 
 .resources-title-section {
@@ -82,15 +90,24 @@
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  transform: scale(1);
 }
 
 .filter-button:hover {
   background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.filter-button:active {
+  transform: scale(0.98) translateY(0);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+  transition: all 0.1s ease;
 }
 
 .filter-button.active {
@@ -138,12 +155,20 @@
   font-weight: 500;
   cursor: pointer;
   padding: 5px 10px;
-  transition: color 0.3s ease;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  transform: scale(1);
 }
 
 .clear-filters-button:hover {
   color: #1d4ed8;
   text-decoration: underline;
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.clear-filters-button:active {
+  transform: scale(0.95);
+  transition: all 0.1s ease;
 }
 
 .filter-groups {
@@ -179,11 +204,30 @@
   padding: 6px 0;
   font-size: 0.9rem;
   color: #4b5563;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  padding-left: 4px;
+  margin-left: -4px;
 }
 
 .filter-checkbox:hover {
   color: #2563eb;
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+.filter-checkbox input[type="checkbox"]:checked ~ span {
+  color: #2563eb;
+  font-weight: 500;
+  animation: textFadeIn 0.2s ease;
+}
+
+@keyframes textFadeIn {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .filter-checkbox input[type="checkbox"] {
@@ -203,12 +247,14 @@
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   font-size: 1rem;
-  transition: border-color 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .search-input:focus {
   outline: none;
   border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  transform: translateY(-1px);
 }
 
 .search-icon {
@@ -244,16 +290,34 @@
   color: #6b7280;
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  transform: scale(1);
+  position: relative;
 }
 
 .tab-button:hover {
   color: #2563eb;
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+.tab-button:active {
+  transform: scale(0.98);
+  transition: all 0.1s ease;
 }
 
 .tab-button.active {
   color: #2563eb;
   border-bottom-color: #2563eb;
+  animation: tabActive 0.2s ease;
+}
+
+@keyframes tabActive {
+  0% {
+    border-bottom-width: 0;
+  }
+  100% {
+    border-bottom-width: 2px;
+  }
 }
 
 .resources-info {
@@ -281,11 +345,20 @@
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
-  transition: box-shadow 0.3s ease;
+  transition: all 0.3s ease;
+  transform: translateY(0);
+  cursor: pointer;
 }
 
 .resource-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  border-color: #2563eb;
+}
+
+.resource-card:active {
+  transform: translateY(-2px);
+  transition: all 0.1s ease;
 }
 
 .resource-header {
@@ -364,14 +437,24 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  padding: 8px 0;
+  padding: 8px 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  transform: scale(1);
+  margin-left: -12px;
 }
 
 .more-info-button:hover {
   text-decoration: underline;
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.more-info-button:active {
+  transform: scale(0.95);
+  transition: all 0.1s ease;
 }
 
 .visit-button {
@@ -383,14 +466,23 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  transform: scale(1);
 }
 
 .visit-button:hover {
   background-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.visit-button:active {
+  transform: scale(0.98) translateY(0);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
+  transition: all 0.1s ease;
 }
 
 .no-resources {
@@ -416,11 +508,20 @@
   border-radius: 6px;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.2s ease;
+  transform: scale(1);
 }
 
 .no-resources button:hover {
   background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.no-resources button:active {
+  transform: scale(0.98) translateY(0);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+  transition: all 0.1s ease;
 }
 
 /* Mobile responsiveness */
@@ -538,11 +639,18 @@
   border-radius: 6px;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  transform: scale(1);
 }
 
 .modal-close:hover {
   background-color: #f3f4f6;
   color: #1f2937;
+  transform: scale(1.1);
+}
+
+.modal-close:active {
+  transform: scale(0.95);
+  transition: all 0.1s ease;
 }
 
 .modal-body {
@@ -593,11 +701,20 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.2s ease;
+  transform: scale(1);
 }
 
 .modal-close-button:hover {
   background-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-close-button:active {
+  transform: scale(0.98) translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.1s ease;
 }
 
 /* Mobile responsiveness for modal */

@@ -17,7 +17,9 @@ class User {
       accessibility = {},
       notifications = {},
       onboardingCompleted = false,
-      oauthMetadata = {}
+      oauthMetadata = {},
+      avatarUrl = null,
+      onboardingProgress = {}
     } = userData;
 
     const fullName = `${firstName} ${lastName}`.trim();
@@ -65,7 +67,9 @@ class User {
       accessibility_settings: accessibility,
       notification_preferences: notifications,
       onboarding_completed: onboardingCompleted,
-      oauth_metadata: oauthMetadata
+      oauth_metadata: oauthMetadata,
+      avatar_url: avatarUrl || null,
+      onboarding_progress: onboardingProgress
     };
 
     const { data, error } = await supabase
@@ -137,7 +141,7 @@ class User {
       'first_name', 'last_name', 'email', 'phone', 'city', 'province',
       'identity', 'skills', 'job_preferences',
       'accessibility_settings', 'notification_preferences',
-      'onboarding_completed'
+      'onboarding_completed', 'avatar_url', 'onboarding_progress'
     ];
 
     const updates = {};

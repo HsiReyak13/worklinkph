@@ -90,11 +90,26 @@ router.delete('/profile', async (req, res, next) => {
 });
 
 // @route   PUT /api/users/onboarding
-// @desc    Mark onboarding as complete
+// @desc    Mark onboarding as complete or save progress
 // @access  Private
 router.put('/onboarding', async (req, res, next) => {
   try {
-    const user = await User.update(req.userId, { onboardingCompleted: true });
+    const { completed, progress } = req.body;
+    
+    const updateData = {};
+    if (completed !== undefined) {
+      updateData.onboardingCompleted = completed;
+    }
+    if (progress !== undefined) {
+      updateData.onboardingProgress = progress;
+    }
+    
+    // If no data provided, default to completing onboarding
+    if (Object.keys(updateData).length === 0) {
+      updateData.onboardingCompleted = true;
+    }
+    
+    const user = await User.update(req.userId, updateData);
     
     if (!user) {
       return res.status(404).json({
@@ -105,7 +120,42 @@ router.put('/onboarding', async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Onboarding completed successfully',
+      message: 'Onboarding progress saved successfully',
+      data: { user }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   POST /api/users/upload-avatar
+// @desc    Upload profile picture
+// @access  Private
+router.post('/upload-avatar', async (req, res, next) => {
+  try {
+    // This endpoint expects the frontend to upload directly to Supabase Storage
+    // and then send the public URL here to save in the database
+    const { avatarUrl } = req.body;
+    
+    if (!avatarUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'Avatar URL is required'
+      });
+    }
+    
+    const user = await User.update(req.userId, { avatarUrl });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Avatar updated successfully',
       data: { user }
     });
   } catch (error) {

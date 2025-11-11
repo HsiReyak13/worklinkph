@@ -1,0 +1,278 @@
+/* Floating Accessibility Button */
+.accessibility-button {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border: none;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4),
+              0 2px 4px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  font-size: 0;
+}
+
+.accessibility-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.5),
+              0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.accessibility-button:active {
+  transform: scale(0.95);
+}
+
+.accessibility-button:focus {
+  outline: 3px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Accessibility Menu */
+.accessibility-menu {
+  position: fixed;
+  bottom: 160px;
+  right: 20px;
+  width: 320px;
+  max-width: calc(100vw - 40px);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
+              0 4px 16px rgba(220, 38, 38, 0.3);
+  z-index: 1001;
+  animation: slideUp 0.3s ease-out;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.accessibility-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.accessibility-menu-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+}
+
+.accessibility-menu-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.accessibility-menu-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.accessibility-menu-content {
+  padding: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.accessibility-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: inherit;
+}
+
+.accessibility-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.accessibility-menu-item:focus {
+  outline: 2px solid rgba(220, 38, 38, 0.5);
+  outline-offset: -2px;
+}
+
+.accessibility-menu-item.active {
+  background: rgba(220, 38, 38, 0.2);
+}
+
+.accessibility-menu-item.active:hover {
+  background: rgba(220, 38, 38, 0.3);
+}
+
+.accessibility-menu-item svg {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.accessibility-menu-item.active svg {
+  color: #fca5a5;
+}
+
+.menu-item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-item-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: white;
+}
+
+.menu-item-description {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+}
+
+.menu-item-toggle {
+  width: 44px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  position: relative;
+  transition: background 0.3s ease;
+  flex-shrink: 0;
+}
+
+.menu-item-toggle.on {
+  background: #dc2626;
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.menu-item-toggle.on .toggle-slider {
+  transform: translateX(20px);
+}
+
+.accessibility-menu-item.help-item {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 4px;
+  padding-top: 16px;
+}
+
+/* Large text mode adjustments */
+.large-text-mode .accessibility-menu {
+  width: 360px;
+}
+
+.large-text-mode .menu-item-label {
+  font-size: 17px;
+}
+
+.large-text-mode .menu-item-description {
+  font-size: 14px;
+}
+
+.large-text-mode .accessibility-button {
+  width: 64px;
+  height: 64px;
+}
+
+.large-text-mode .accessibility-button svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* High contrast mode */
+.high-contrast-mode .accessibility-button {
+  background: #000;
+  border: 2px solid #fff;
+}
+
+.high-contrast-mode .accessibility-menu {
+  background: #000;
+  border: 2px solid #fff;
+}
+
+.high-contrast-mode .accessibility-menu-item {
+  border: 1px solid transparent;
+}
+
+.high-contrast-mode .accessibility-menu-item:hover,
+.high-contrast-mode .accessibility-menu-item:focus {
+  border-color: #fff;
+  background: #333;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .accessibility-button {
+    bottom: 90px;
+    right: 16px;
+    width: 52px;
+    height: 52px;
+  }
+
+  .accessibility-menu {
+    bottom: 150px;
+    right: 16px;
+    width: calc(100vw - 32px);
+    max-width: 320px;
+  }
+
+  .large-text-mode .accessibility-menu {
+    width: calc(100vw - 32px);
+    max-width: 360px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .accessibility-button,
+  .accessibility-menu,
+  .accessibility-menu-item,
+  .toggle-slider {
+    transition: none;
+    animation: none;
+  }
+}
+

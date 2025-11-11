@@ -55,3 +55,71 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Accessibility: Large Text Mode */
+.large-text-mode {
+  font-size: 1.2em;
+}
+
+.large-text-mode h1 {
+  font-size: 2.2em;
+}
+
+.large-text-mode h2 {
+  font-size: 1.8em;
+}
+
+.large-text-mode h3 {
+  font-size: 1.5em;
+}
+
+.large-text-mode button,
+.large-text-mode input,
+.large-text-mode textarea,
+.large-text-mode select {
+  font-size: 1.1em;
+  padding: 0.8em 1em;
+}
+
+.large-text-mode .bottom-nav-label {
+  font-size: 0.9em;
+}
+
+/* Accessibility: High Contrast Mode */
+.high-contrast-mode {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+.high-contrast-mode * {
+  background-color: transparent !important;
+  color: #fff !important;
+  border-color: #fff !important;
+}
+
+.high-contrast-mode button {
+  background: #000 !important;
+  border: 2px solid #fff !important;
+  color: #fff !important;
+}
+
+.high-contrast-mode button:hover,
+.high-contrast-mode button:focus {
+  background: #fff !important;
+  color: #000 !important;
+}
+
+.high-contrast-mode input,
+.high-contrast-mode textarea,
+.high-contrast-mode select {
+  background: #000 !important;
+  border: 2px solid #fff !important;
+  color: #fff !important;
+}
+
+.high-contrast-mode input:focus,
+.high-contrast-mode textarea:focus,
+.high-contrast-mode select:focus {
+  outline: 3px solid #fff !important;
+  outline-offset: 2px !important;
+}

@@ -13,8 +13,10 @@ import OnboardingScreen from './screens/OnboardingScreen';
 import AuthCallback from './screens/AuthCallback';
 import { ToastProvider } from './components/Toast';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
+import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import BottomNavigation from './components/BottomNavigation';
 import Breadcrumbs from './components/Breadcrumbs';
+import AccessibilityButton from './components/AccessibilityButton';
 
 // Inner app component that uses navigation context
 function AppContent() {
@@ -28,7 +30,7 @@ function AppContent() {
     } catch (_) {
       return false;
     }
-  }, [currentScreen]);
+  }, []);
 
   // Check authentication status on mount
   useEffect(() => {
@@ -181,24 +183,29 @@ function AppContent() {
               onNavigate={handleNavigate} 
             />
           )}
-          {renderScreen()}
+          <div className="screen-wrapper" key={currentScreen}>
+            {renderScreen()}
+          </div>
           <BottomNavigation 
             currentScreen={currentScreen} 
             onNavigate={handleNavigate}
             isLoggedIn={isLoggedIn}
           />
+          {isLoggedIn && <AccessibilityButton />}
         </div>
       </div>
     </ToastProvider>
   );
 }
 
-// Main App component wrapped with NavigationProvider
+// Main App component wrapped with NavigationProvider and AccessibilityProvider
 function App() {
   return (
-    <NavigationProvider>
-      <AppContent />
-    </NavigationProvider>
+    <AccessibilityProvider>
+      <NavigationProvider>
+        <AppContent />
+      </NavigationProvider>
+    </AccessibilityProvider>
   );
 }
 

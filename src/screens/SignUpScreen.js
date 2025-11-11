@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import './SignUpScreen.css';
 import { authAPI } from '../services/api';
+// eslint-disable-next-line no-unused-vars
 import { supabase } from '../config/supabase';
 import { useToast } from '../components/Toast';
 
@@ -14,6 +15,7 @@ const SignUpScreen = ({ onNavigate, onSignUp }) => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [touched, setTouched] = useState({});
+  // eslint-disable-next-line no-unused-vars
   const [success, setSuccess] = useState(false);
   const toast = useToast();
   const [formData, setFormData] = useState({

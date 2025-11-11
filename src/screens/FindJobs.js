@@ -12,6 +12,7 @@ const FindJobs = ({ onNavigate }) => {
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [selectedJob, setSelectedJob] = useState(null);
   const [filterOptions, setFilterOptions] = useState({
     jobType: [],
@@ -20,6 +21,7 @@ const FindJobs = ({ onNavigate }) => {
   });
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
   const [filtering, setFiltering] = useState(false);
   const toast = useToast();
@@ -189,6 +191,7 @@ const FindJobs = ({ onNavigate }) => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const closeJobDetails = () => {
     setSelectedJob(null);
     // Reset breadcrumbs to just Jobs

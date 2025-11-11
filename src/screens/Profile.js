@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { FiMenu, FiUser, FiArrowRight, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import React, { useState, useEffect, useRef } from 'react';
+import { FiMenu, FiArrowRight, FiCheckCircle, FiAlertCircle, FiCamera } from 'react-icons/fi';
 import './Profile.css';
 import Sidebar from '../components/Sidebar';
 import { userAPI } from '../services/api';
 import { useToast } from '../components/Toast';
-import ProgressiveImage from '../components/ProgressiveImage';
+import Avatar from '../components/Avatar';
+import { supabase } from '../config/supabase';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 
 const Profile = ({ onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -13,7 +15,10 @@ const Profile = ({ onNavigate }) => {
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
   const toast = useToast();
+  const { preferences: accessibilityPrefs, updatePreference, getText } = useAccessibility();
   
   const [profileData, setProfileData] = useState({
     fullName: '',
@@ -53,6 +58,7 @@ const Profile = ({ onNavigate }) => {
           const fullName = user.fullName || 
             (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : '') ||
             user.full_name || '';
+          const userAccessibility = user.accessibility || user.accessibility_settings || {};
           setProfileData(prev => ({
             ...prev,
             fullName,
@@ -63,10 +69,26 @@ const Profile = ({ onNavigate }) => {
             identity: user.identity || '',
             skills: user.skills || '',
             avatarUrl: user.avatar_url || user.avatarUrl || null,
+            onboardingProgress: user.onboarding_progress || user.onboardingProgress || {},
             jobPreferences: user.jobPreferences || user.job_preferences || prev.jobPreferences,
-            accessibility: user.accessibility || user.accessibility_settings || prev.accessibility,
+            accessibility: {
+              screenReader: userAccessibility.screenReader || false,
+              highContrast: userAccessibility.highContrast || false,
+              largeText: userAccessibility.largeText || false
+            },
             notifications: user.notifications || user.notification_preferences || prev.notifications
           }));
+          
+          // Sync with accessibility context
+          if (userAccessibility.largeText !== undefined) {
+            updatePreference('largeText', userAccessibility.largeText);
+          }
+          if (userAccessibility.highContrast !== undefined) {
+            updatePreference('highContrast', userAccessibility.highContrast);
+          }
+          if (userAccessibility.screenReader !== undefined) {
+            updatePreference('screenReader', userAccessibility.screenReader);
+          }
         }
       } catch (err) {
         console.error('Error loading profile:', err);
@@ -154,6 +176,11 @@ const Profile = ({ onNavigate }) => {
           [child]: type === 'checkbox' ? checked : value
         }
       }));
+      
+      // Sync accessibility preferences with context
+      if (parent === 'accessibility' && type === 'checkbox') {
+        updatePreference(child, checked);
+      }
     } else {
       setProfileData(prev => ({
         ...prev,
@@ -237,7 +264,11 @@ const Profile = ({ onNavigate }) => {
         identity: profileData.identity || null,
         skills: profileData.skills || null,
         jobPreferences: profileData.jobPreferences,
-        accessibility: profileData.accessibility,
+        accessibility: {
+          screenReader: accessibilityPrefs.screenReader || profileData.accessibility.screenReader,
+          highContrast: accessibilityPrefs.highContrast || profileData.accessibility.highContrast,
+          largeText: accessibilityPrefs.largeText || profileData.accessibility.largeText
+        },
         notifications: profileData.notifications
       };
       
@@ -285,6 +316,84 @@ const Profile = ({ onNavigate }) => {
     setSidebarOpen(false);
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      // Create a unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        // If bucket doesn't exist, try to create it or use a different approach
+        if (uploadError.message.includes('Bucket not found')) {
+          throw new Error('Avatar storage not configured. Please contact support.');
+        }
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Save URL to database
+      const response = await userAPI.uploadAvatar(publicUrl);
+      
+      if (response.success) {
+        setProfileData(prev => ({
+          ...prev,
+          avatarUrl: publicUrl
+        }));
+        toast.success('Profile picture updated successfully!');
+      } else {
+        throw new Error(response.message || 'Failed to save avatar URL');
+      }
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
+      toast.error(err.message || 'Failed to upload profile picture. Please try again.');
+    } finally {
+      setUploadingAvatar(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div className="profile">
       {/* Header */}
@@ -298,24 +407,46 @@ const Profile = ({ onNavigate }) => {
       {/* Profile Header Section */}
       <section className="profile-hero">
         <div className="profile-hero-content">
-          <ProgressiveImage
-            src={profileData.avatarUrl}
-            alt="Profile avatar"
-            className="avatar"
-            fallback={<FiUser size={64} />}
-            style={{ width: '80px', height: '80px' }}
-          />
-          <h2>My Profile</h2>
-          <p>Customize your experience</p>
+          <div className="avatar-upload-container">
+            <Avatar
+              src={profileData.avatarUrl}
+              name={profileData.fullName}
+              className="profile-avatar"
+              size={100}
+            />
+            <button
+              className="avatar-upload-button"
+              onClick={handleAvatarClick}
+              disabled={uploadingAvatar}
+              aria-label="Upload profile picture"
+              title="Upload profile picture"
+            >
+              {uploadingAvatar ? (
+                <div className="avatar-upload-spinner"></div>
+              ) : (
+                <FiCamera size={20} />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              style={{ display: 'none' }}
+              aria-label="Profile picture file input"
+            />
+          </div>
+          <h2>{getText('My Profile')}</h2>
+          <p>{getText('Customize your experience')}</p>
         </div>
       </section>
 
       {/* Personal Information */}
       <section className="profile-section">
-        <h3>Personal Information</h3>
+        <h3>{getText('Personal Information')}</h3>
         <div className="form-grid">
           <div className="form-group">
-            <label htmlFor="fullName">Full Name</label>
+            <label htmlFor="fullName">{getText('Full Name')}</label>
             <div className="input-wrapper">
               <input
                 type="text"
@@ -324,7 +455,7 @@ const Profile = ({ onNavigate }) => {
                 value={profileData.fullName}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                placeholder="Enter your full name"
+                placeholder={getText('Enter your full name')}
                 className={
                   touched.fullName && validationErrors.fullName
                     ? 'input-error'
@@ -350,7 +481,7 @@ const Profile = ({ onNavigate }) => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email">{getText('Email Address')}</label>
             <div className="input-wrapper">
               <input
                 type="email"
@@ -359,7 +490,7 @@ const Profile = ({ onNavigate }) => {
                 value={profileData.email}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                placeholder="Enter your email"
+                placeholder={getText('Enter your email')}
                 className={
                   touched.email && validationErrors.email
                     ? 'input-error'
@@ -385,7 +516,7 @@ const Profile = ({ onNavigate }) => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="phone">Phone Number</label>
+            <label htmlFor="phone">{getText('Phone Number')}</label>
             <div className="input-wrapper">
               <input
                 type="tel"
@@ -422,31 +553,31 @@ const Profile = ({ onNavigate }) => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="city">Location (City)</label>
+            <label htmlFor="city">{getText('Location (City)')}</label>
             <input
               type="text"
               id="city"
               name="city"
               value={profileData.city}
               onChange={handleInputChange}
-              placeholder="Enter your city"
+              placeholder={getText('Enter your city')}
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="province">Province</label>
+            <label htmlFor="province">{getText('Province')}</label>
             <input
               type="text"
               id="province"
               name="province"
               value={profileData.province}
               onChange={handleInputChange}
-              placeholder="Enter your province"
+              placeholder={getText('Enter your province')}
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="identity">I identify as:</label>
+            <label htmlFor="identity">{getText('I identify as:')}</label>
             <select
               id="identity"
               name="identity"
@@ -466,15 +597,15 @@ const Profile = ({ onNavigate }) => {
 
       {/* Skills & Experience */}
       <section className="profile-section">
-        <h3>Skills & Experience</h3>
+        <h3>{getText('Skills & Experience')}</h3>
         <div className="form-group">
-          <label htmlFor="skills">List your skills and previous work experience</label>
+          <label htmlFor="skills">{getText('List your skills and previous work experience')}</label>
           <textarea
             id="skills"
             name="skills"
             value={profileData.skills}
             onChange={handleInputChange}
-            placeholder="Describe your skills, work experience, and qualifications..."
+            placeholder={getText('Describe your skills, work experience, and qualifications...')}
             rows="4"
           />
         </div>
@@ -482,7 +613,7 @@ const Profile = ({ onNavigate }) => {
 
       {/* Job Preferences */}
       <section className="profile-section">
-        <h3>Job Preferences</h3>
+        <h3>{getText('Job Preferences')}</h3>
         <div className="checkbox-group">
           <label className="checkbox-label">
             <input
@@ -532,7 +663,7 @@ const Profile = ({ onNavigate }) => {
 
       {/* Accessibility Settings */}
       <section className="profile-section">
-        <h3>Accessibility Settings</h3>
+        <h3>{getText('Accessibility Settings')}</h3>
         <div className="checkbox-group">
           <label className="checkbox-label">
             <input
@@ -571,7 +702,7 @@ const Profile = ({ onNavigate }) => {
 
       {/* Notification Preferences */}
       <section className="profile-section">
-        <h3>Notification Preferences</h3>
+        <h3>{getText('Notification Preferences')}</h3>
         <div className="checkbox-group">
           <label className="checkbox-label">
             <input
@@ -615,10 +746,10 @@ const Profile = ({ onNavigate }) => {
           onClick={handleSaveProfile}
           disabled={saving || loading}
         >
-          {saving ? 'Saving...' : success ? 'Saved!' : 'Save Profile'}
+          {saving ? 'Saving...' : success ? 'Saved!' : getText('Save Profile')}
         </button>
         <button className="signout-button" onClick={handleSignOut}>
-          <span>Sign Out</span>
+          <span>{getText('Sign Out')}</span>
           <FiArrowRight size={18} />
         </button>
       </section>

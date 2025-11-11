@@ -23,6 +23,43 @@
   border-right: 1px solid rgba(220, 38, 38, 0.3);
   position: relative;
   padding-bottom: 72px; /* Space for bottom navigation on mobile */
+  overflow: hidden;
+}
+
+/* Page transition animations */
+.page-enter {
+  animation: pageFadeIn 0.3s ease-out;
+}
+
+.page-exit {
+  animation: pageFadeOut 0.2s ease-in;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pageFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* Screen wrapper for transitions */
+.screen-wrapper {
+  animation: pageFadeIn 0.3s ease-out;
 }
 
 @media (min-width: 769px) {

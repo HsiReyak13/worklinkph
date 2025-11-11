@@ -19,6 +19,7 @@ const Resources = ({ onNavigate }) => {
   });
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
   const toast = useToast();
   const { updateBreadcrumbs } = useNavigation();

@@ -216,6 +216,20 @@ export const userAPI = {
       method: 'PUT',
     });
   },
+
+  saveOnboardingProgress: async (progress) => {
+    return apiRequest('/users/onboarding', {
+      method: 'PUT',
+      body: { progress, completed: false },
+    });
+  },
+
+  uploadAvatar: async (avatarUrl) => {
+    return apiRequest('/users/upload-avatar', {
+      method: 'POST',
+      body: { avatarUrl },
+    });
+  },
 };
 
 // Jobs API
