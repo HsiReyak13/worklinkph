@@ -198,6 +198,9 @@ class User {
       .single();
 
     if (error) {
+      console.error('User update error:', error);
+      console.error('Update data:', updates);
+      console.error('User ID:', id);
       throw new Error(`Failed to update user: ${error.message}`);
     }
 

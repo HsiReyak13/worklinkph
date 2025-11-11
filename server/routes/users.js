@@ -68,6 +68,9 @@ router.put('/profile',
         data: { user }
       });
     } catch (error) {
+      console.error('Profile update error:', error);
+      console.error('Update data received:', req.body);
+      console.error('User ID:', req.userId);
       next(error);
     }
   }

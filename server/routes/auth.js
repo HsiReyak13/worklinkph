@@ -52,6 +52,8 @@ const loginValidation = [
 router.post('/register', registerValidation, handleValidationErrors, async (req, res, next) => {
   try {
     const { firstName, lastName, email, phone, password, city, province, identity, skills, jobPreferences, accessibility, notifications } = req.body;
+    
+    // Create auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -84,9 +86,59 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
       });
     }
 
+    // CRITICAL: Verify the auth user exists in auth.users table
+    // This ensures the foreign key constraint will be satisfied
+    // Try up to 3 times with delays in case of timing issues
+    let verifiedAuthUser = null;
+    let verifyError = null;
+    const maxRetries = 3;
+    const retryDelay = 500; // milliseconds
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const { data: { user: verifiedUser }, error: error } = await supabase.auth.admin.getUserById(authData.user.id);
+      
+      if (!error && verifiedUser) {
+        verifiedAuthUser = verifiedUser;
+        verifyError = null;
+        break;
+      } else {
+        verifyError = error;
+        if (attempt < maxRetries) {
+          // Wait before retrying (in case Supabase is still creating the user)
+          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+        }
+      }
+    }
+
+    if (verifyError || !verifiedAuthUser) {
+      console.error('Auth user verification failed:', {
+        authUserId: authData.user.id,
+        email: email,
+        error: verifyError?.message,
+        attempts: maxRetries
+      });
+      
+      // Clean up: try to delete the auth user if it was created
+      if (authData.user.id) {
+        try {
+          await supabase.auth.admin.deleteUser(authData.user.id);
+        } catch (deleteError) {
+          console.error('Failed to delete auth user:', deleteError);
+        }
+      }
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Authentication user not found. Please try again or check if email confirmation is required.'
+      });
+    }
+
+    // Use the verified auth user ID (guaranteed to exist in auth.users)
+    const verifiedAuthUserId = verifiedAuthUser.id;
+
     try {
       const user = await User.create({
-        authUserId: authData.user.id,
+        authUserId: verifiedAuthUserId, // Use verified ID
         firstName,
         lastName,
         email,
@@ -100,6 +152,12 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
         notifications: notifications || { email: true, sms: false, inApp: true }
       });
 
+      console.log('User profile created successfully:', {
+        userId: user.id,
+        email: user.email,
+        authUserId: verifiedAuthUserId
+      });
+
       res.status(201).json({
         success: true,
         message: 'Account created successfully',
@@ -109,10 +167,25 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
         }
       });
     } catch (profileError) {
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      console.error('Profile creation error:', {
+        error: profileError.message,
+        authUserId: verifiedAuthUserId,
+        email: email
+      });
+      
+      // Clean up: delete the auth user if profile creation fails
+      try {
+        await supabase.auth.admin.deleteUser(verifiedAuthUserId);
+      } catch (deleteError) {
+        console.error('Failed to delete auth user after profile error:', deleteError);
+      }
       throw profileError;
     }
   } catch (error) {
+    console.error('Registration error:', {
+      error: error.message,
+      stack: error.stack
+    });
     next(error);
   }
 });
@@ -282,31 +355,75 @@ router.post('/google/callback', async (req, res, next) => {
       });
     }
 
-    let user = await User.findByAuthUserId(authUser.id);
+    // CRITICAL: Verify the auth user exists in auth.users table
+    // This ensures the foreign key constraint will be satisfied
+    // Try up to 3 times with delays in case of timing issues
+    let verifiedAuthUser = null;
+    let verifyError = null;
+    const maxRetries = 3;
+    const retryDelay = 500; // milliseconds
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const { data: { user: verifiedUser }, error: error } = await supabase.auth.admin.getUserById(authUser.id);
+      
+      if (!error && verifiedUser) {
+        verifiedAuthUser = verifiedUser;
+        verifyError = null;
+        break;
+      } else {
+        verifyError = error;
+        if (attempt < maxRetries) {
+          // Wait before retrying (in case Supabase is still creating the user)
+          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+        }
+      }
+    }
+
+    if (verifyError || !verifiedAuthUser) {
+      console.error('Auth user verification failed:', {
+        authUserId: authUser.id,
+        email: email,
+        error: verifyError?.message,
+        attempts: maxRetries
+      });
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Authentication user not found. The user may not be fully created yet. Please try signing in again.'
+      });
+    }
+
+    // Use the verified auth user ID (guaranteed to exist in auth.users)
+    const verifiedAuthUserId = verifiedAuthUser.id;
+
+    // Check if profile already exists
+    let user = await User.findByAuthUserId(verifiedAuthUserId);
     
     if (!user) {
       const fullName = authUser.user_metadata?.full_name || 
                        authUser.user_metadata?.name || 
+                       verifiedAuthUser.user_metadata?.full_name ||
                        email.split('@')[0];
       const nameParts = fullName.trim().split(/\s+/);
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || fullName;
       
-      const phone = authUser.user_metadata?.phone || '';
+      const phone = authUser.user_metadata?.phone || verifiedAuthUser.user_metadata?.phone || '';
       
       const oauthMetadata = {
         provider: 'google',
-        avatar_url: authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || null,
-        email_verified: authUser.email_confirmed_at ? true : false,
-        full_name: authUser.user_metadata?.full_name || null,
-        given_name: authUser.user_metadata?.given_name || firstName,
-        family_name: authUser.user_metadata?.family_name || lastName,
-        locale: authUser.user_metadata?.locale || null
+        avatar_url: authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || verifiedAuthUser.user_metadata?.avatar_url || null,
+        email_verified: verifiedAuthUser.email_confirmed_at ? true : false,
+        full_name: authUser.user_metadata?.full_name || verifiedAuthUser.user_metadata?.full_name || null,
+        given_name: authUser.user_metadata?.given_name || verifiedAuthUser.user_metadata?.given_name || firstName,
+        family_name: authUser.user_metadata?.family_name || verifiedAuthUser.user_metadata?.family_name || lastName,
+        locale: authUser.user_metadata?.locale || verifiedAuthUser.user_metadata?.locale || null
       };
       
       try {
+        // Use verified auth user ID to ensure foreign key constraint is satisfied
         user = await User.create({
-          authUserId: authUser.id,
+          authUserId: verifiedAuthUserId, // Use verified ID that we know exists
           authProvider: 'google',
           firstName,
           lastName,
@@ -321,12 +438,30 @@ router.post('/google/callback', async (req, res, next) => {
           notifications: { email: true, sms: false, inApp: true },
           oauthMetadata: oauthMetadata
         });
+        
+        console.log('User profile created successfully:', {
+          userId: user.id,
+          email: user.email,
+          authUserId: verifiedAuthUserId
+        });
       } catch (createError) {
+        console.error('Profile creation error:', {
+          error: createError.message,
+          authUserId: verifiedAuthUserId,
+          email: email
+        });
+        
+        // If creation fails, try to find existing user by email (might have been created by another process)
         user = await User.findByEmail(email);
         if (!user) {
-          throw createError;
+          // Re-throw with more context
+          throw new Error(`Failed to create user profile: ${createError.message}. Auth user exists but profile creation failed.`);
+        } else {
+          console.log('Found existing user profile by email:', user.id);
         }
       }
+    } else {
+      console.log('User profile already exists:', user.id);
     }
 
     res.json({
@@ -338,6 +473,10 @@ router.post('/google/callback', async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('Google callback error:', {
+      error: error.message,
+      stack: error.stack
+    });
     next(error);
   }
 });

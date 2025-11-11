@@ -10,7 +10,17 @@ if (!supabaseUrl || !supabaseKey) {
 
 let supabase = null;
 if (supabaseUrl && supabaseKey) {
-  supabase = createClient(supabaseUrl, supabaseKey);
+  // Initialize Supabase client with service role key
+  // Service role key should bypass RLS automatically
+  supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    },
+    db: {
+      schema: 'public'
+    }
+  });
   console.log('✅ Connected to Supabase database');
 } else {
   console.error('❌ Failed to initialize Supabase client. Check your environment variables.');
