@@ -353,8 +353,12 @@ const Profile = ({ onNavigate }) => {
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file (JPG, PNG, or GIF). The file you selected is not an image.');
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      toast.error(`Please select a valid image file (JPG, PNG, GIF, or WebP). File type: ${file.type || 'unknown'}`);
       return;
     }
 
@@ -368,61 +372,156 @@ const Profile = ({ onNavigate }) => {
     setUploadingAvatar(true);
     try {
       // Get current user session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error('Not authenticated. Please sign in again.');
+      }
+
+      const userId = session.user.id;
+
+      // Delete old avatar if it exists
+      const oldAvatarUrl = profileData.avatarUrl;
+      if (oldAvatarUrl && (oldAvatarUrl.includes('/avatars/') || oldAvatarUrl.includes('storage/v1/object/public/avatars/'))) {
+        try {
+          // Extract filename from old URL (handles different URL formats)
+          let oldFileName = oldAvatarUrl;
+          if (oldAvatarUrl.includes('/avatars/')) {
+            oldFileName = oldAvatarUrl.split('/avatars/').pop();
+          } else if (oldAvatarUrl.includes('avatars/')) {
+            oldFileName = oldAvatarUrl.split('avatars/').pop();
+          }
+          
+          // Remove query parameters if present
+          oldFileName = oldFileName.split('?')[0].split('#')[0];
+          
+          // Only delete if filename starts with user ID (security check)
+          if (oldFileName && oldFileName.startsWith(userId)) {
+            const { error: deleteError } = await supabase.storage
+              .from('avatars')
+              .remove([oldFileName]);
+            
+            if (deleteError) {
+              console.warn('Failed to delete old avatar:', deleteError);
+              // Don't throw - continue with upload even if deletion fails
+            } else {
+              console.log('Old avatar deleted successfully:', oldFileName);
+            }
+          }
+        } catch (deleteErr) {
+          console.warn('Error deleting old avatar:', deleteErr);
+          // Continue with upload
+        }
       }
 
       // Create a unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileExt = fileExtension || file.name.split('.').pop() || 'jpg';
+      const timestamp = Date.now();
+      let fileName = `${userId}-${timestamp}.${fileExt}`;
 
       // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, {
+        .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
+          contentType: file.type || `image/${fileExt}`
         });
 
       if (uploadError) {
-        // If bucket doesn't exist, try to create it or use a different approach
-        if (uploadError.message.includes('Bucket not found')) {
-          throw new Error('Avatar storage not configured. Please contact support.');
+        console.error('Supabase Storage upload error:', {
+          error: uploadError,
+          message: uploadError.message,
+          statusCode: uploadError.statusCode,
+          errorCode: uploadError.error,
+          fileName: fileName,
+          fileSize: file.size,
+          fileType: file.type,
+          userId: userId
+        });
+        
+        if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found')) {
+          throw new Error('Avatar storage bucket not configured. Please contact support.');
+        } else if (uploadError.message?.includes('new row violates row-level security') || uploadError.message?.includes('RLS') || uploadError.message?.includes('permission')) {
+          throw new Error('Permission denied. Storage bucket policies need to be configured. Please run the setup_storage_bucket.sql script in Supabase.');
+        } else if (uploadError.message?.includes('duplicate') || uploadError.message?.includes('already exists')) {
+          // If file exists, try with a new timestamp
+          fileName = `${userId}-${timestamp + 1}.${fileExt}`;
+          const { data: retryData, error: retryError } = await supabase.storage
+            .from('avatars')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: file.type || `image/${fileExt}`
+            });
+          
+          if (retryError) {
+            throw retryError;
+          }
+        } else if (uploadError.statusCode === 413 || uploadError.message?.includes('too large')) {
+          throw new Error('File is too large. Please select an image under 5MB.');
+        } else {
+          throw uploadError;
         }
-        throw uploadError;
       }
 
-      // Get public URL
+      // Get public URL with cache busting
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
+
+      // Add cache busting query parameter to force refresh
+      const publicUrlWithCache = `${publicUrl}?t=${timestamp}`;
+
+      // Verify the URL is accessible
+      try {
+        const img = new Image();
+        img.onerror = () => {
+          console.warn('Avatar URL might not be accessible yet:', publicUrlWithCache);
+        };
+        img.src = publicUrlWithCache;
+      } catch (imgErr) {
+        console.warn('Error verifying avatar URL:', imgErr);
+      }
 
       // Save URL to database
-      const response = await userAPI.uploadAvatar(publicUrl);
+      const response = await userAPI.uploadAvatar(publicUrlWithCache);
       
       if (response.success) {
+        // Update local state with new avatar URL
         setProfileData(prev => ({
           ...prev,
-          avatarUrl: publicUrl
+          avatarUrl: publicUrlWithCache
         }));
         toast.success('Profile picture updated successfully!');
       } else {
-        throw new Error(response.message || 'Failed to save avatar URL');
+        throw new Error(response.message || 'Failed to save avatar URL to database');
       }
     } catch (err) {
-      console.error('Error uploading avatar:', err);
+      console.error('Error uploading avatar:', {
+        error: err,
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
+      
       let errorMessage = 'Failed to upload profile picture. ';
-      if (err.message?.includes('Bucket not found') || err.message?.includes('storage not configured')) {
+      
+      if (err.message?.includes('Bucket not found') || err.message?.includes('storage not configured') || err.message?.includes('bucket not configured')) {
         errorMessage += 'Avatar storage is not available. Please contact support.';
-      } else if (err.message?.includes('network') || err.message?.includes('fetch')) {
-        errorMessage += 'Please check your internet connection and try again.';
-      } else if (err.message?.includes('Not authenticated')) {
+      } else if (err.message?.includes('Permission denied') || err.message?.includes('RLS') || err.message?.includes('row-level security') || err.message?.includes('permission')) {
+        errorMessage += 'Permission denied. Please run the setup_storage_bucket.sql script in Supabase SQL Editor to configure storage permissions.';
+      } else if (err.message?.includes('network') || err.message?.includes('fetch') || err.message?.includes('Failed to fetch')) {
+        errorMessage += 'Network error. Please check your internet connection and try again.';
+      } else if (err.message?.includes('Not authenticated') || err.message?.includes('session')) {
         errorMessage += 'Your session has expired. Please sign in again.';
+      } else if (err.message?.includes('too large') || err.message?.includes('413')) {
+        errorMessage += err.message;
+      } else if (err.message) {
+        errorMessage += err.message;
       } else {
         errorMessage += 'Please try again with a different image. Make sure the file is a valid image (JPG, PNG, or GIF) under 5MB.';
       }
+      
       toast.error(errorMessage);
     } finally {
       setUploadingAvatar(false);
