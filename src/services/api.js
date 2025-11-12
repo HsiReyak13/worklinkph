@@ -10,7 +10,7 @@ const getApiBaseUrl = () => {
   if (process.env.NODE_ENV === 'development') {
     return '/api';
   }
-  // In production, use environment variable or default
+  // In production, use environment variable or default to same origin (Vercel serverless functions)
   return process.env.REACT_APP_API_URL || '/api';
 };
 
@@ -184,13 +184,15 @@ export const authAPI = {
 
   // Handle OAuth callback
   handleAuthCallback: async () => {
-    // Get the session from URL hash
+    // Supabase automatically processes the URL hash and sets the session
+    // Just get the session to confirm it's set
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     if (sessionError) throw sessionError;
     
-    if (session) {
-      // Check if user profile exists, if not create it
+    if (session && session.user) {
+      // Session is already set by Supabase, no backend call needed
+      // Optionally try to sync with backend if available, but don't fail if it's not
       try {
         const response = await apiRequest('/auth/google/callback', {
           method: 'POST',
@@ -198,12 +200,19 @@ export const authAPI = {
         });
         return response;
       } catch (err) {
-        // If profile doesn't exist, create it
-        return { success: true, session, needsProfile: true };
+        // Backend might not be available in production, that's okay
+        // The session is already set, so authentication succeeded
+        console.warn('Backend callback sync failed (this is okay if backend is not deployed):', err);
+        return { 
+          success: true, 
+          session, 
+          user: session.user,
+          needsProfile: true // Profile might need to be created later
+        };
       }
     }
     
-    return { success: false };
+    return { success: false, message: 'No session found' };
   }
 };
 
