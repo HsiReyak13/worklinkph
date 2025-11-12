@@ -419,7 +419,7 @@ const Profile = ({ onNavigate }) => {
       let fileName = `${userId}-${timestamp}.${fileExt}`;
 
       // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, {
           cacheControl: '3600',
@@ -446,7 +446,7 @@ const Profile = ({ onNavigate }) => {
         } else if (uploadError.message?.includes('duplicate') || uploadError.message?.includes('already exists')) {
           // If file exists, try with a new timestamp
           fileName = `${userId}-${timestamp + 1}.${fileExt}`;
-          const { data: retryData, error: retryError } = await supabase.storage
+          const { error: retryError } = await supabase.storage
             .from('avatars')
             .upload(fileName, file, {
               cacheControl: '3600',
