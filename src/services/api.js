@@ -83,21 +83,38 @@ export const authAPI = {
   },
 
   login: async (emailOrPhone, password) => {
-    // Login through backend API (which uses Supabase Auth)
-    const response = await apiRequest('/auth/login', {
-      method: 'POST',
-      body: { emailOrPhone, password },
+    // Login directly through Supabase Auth (works in production without backend)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: emailOrPhone, // Supabase uses email, but we accept emailOrPhone for UX
+      password: password,
     });
 
-    // Save Supabase session if returned
-    if (response.data?.session) {
-      await supabase.auth.setSession({
-        access_token: response.data.session.access_token,
-        refresh_token: response.data.session.refresh_token
-      });
+    if (error) {
+      throw new Error(error.message || 'Login failed. Please check your credentials.');
     }
 
-    return response;
+    if (data?.session) {
+      // Session is automatically saved by Supabase
+      // Optionally sync with backend if available
+      try {
+        await apiRequest('/auth/login', {
+          method: 'POST',
+          body: { emailOrPhone, password },
+        });
+      } catch (backendError) {
+        // Backend might not be available in production, that's okay
+        console.warn('Backend login sync failed (this is okay if backend is not deployed):', backendError);
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Login successful',
+      data: {
+        session: data.session,
+        user: data.user
+      }
+    };
   },
 
   logout: async () => {
