@@ -12,7 +12,7 @@
     "philippines"
   ],
   "author": "WorkLink PH Team",
-  "homepage": "https://karl1227.github.io/worklinkph",
+  "homepage": ".",
   "dependencies": {
     "@capacitor/app": "^7.1.0",
     "@capacitor/cli": "^7.4.4",
